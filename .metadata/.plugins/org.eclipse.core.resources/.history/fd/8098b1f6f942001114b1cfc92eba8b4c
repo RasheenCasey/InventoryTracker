@@ -1,7 +1,0 @@
-package com.Inventory.productsheet.repository;
-
-import org.springframework.data.jpa.repository.JpaRepository;
-import com.Inventory.productsheet.model.InventoryOrder;
-
-public interface InventoryOrderRepository extends JpaRepository<InventoryOrder, Long> {
-}
