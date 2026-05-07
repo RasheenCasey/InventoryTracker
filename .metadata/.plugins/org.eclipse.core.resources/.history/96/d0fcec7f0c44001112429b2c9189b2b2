@@ -1,0 +1,74 @@
+package com.Inventory.productsheet.controller;
+
+import com.Inventory.productsheet.model.InventoryItem;
+import com.Inventory.productsheet.service.InventoryService;
+import com.Inventory.productsheet.service.JanAIService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.ui.Model;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+
+@Controller
+@RequestMapping("/ai")
+public class AIController {
+
+    @Autowired
+    private JanAIService janAIService;
+
+    @Autowired
+    private InventoryService inventoryService;
+
+    @GetMapping("/chat")
+    public String aiChat(Model model) {
+        model.addAttribute("suggestions", getInventorySuggestions());
+        model.addAttribute("janAvailable", janAIService.isAvailable());
+        return "ai/chat";
+    }
+
+    @PostMapping("/ask")
+    @ResponseBody
+    public Map<String, String> askAI(@RequestBody Map<String, String> request) {
+        String userMessage = request.get("message");
+        String inventoryContext = buildInventoryContext();
+        String aiResponse = janAIService.getAIResponse(userMessage, inventoryContext);
+
+        Map<String, String> response = new HashMap<>();
+        response.put("response", aiResponse);
+        return response;
+    }
+
+    private String buildInventoryContext() {
+        List<InventoryItem> items = inventoryService.getAllItems();
+        int totalItems = items.size();
+        long lowStockCount = items.stream()
+            .filter(item -> item.getQuantity() <= item.getReorderLevel())
+            .count();
+
+        StringBuilder context = new StringBuilder();
+        context.append("Total items: ").append(totalItems).append(". ");
+        context.append("Low stock items: ").append(lowStockCount).append(". ");
+
+        if (lowStockCount > 0) {
+            context.append("Items needing reorder: ");
+            items.stream()
+                .filter(item -> item.getQuantity() <= item.getReorderLevel())
+                .limit(5)
+                .forEach(item -> context.append(item.getName())
+                    .append(" (").append(item.getQuantity()).append(" ").append(item.getUnit()).append("), "));
+        }
+
+        return context.toString();
+    }
+
+    private List<String> getInventorySuggestions() {
+        return List.of(
+            "What items are low on stock?",
+            "How do I add new inventory items?",
+            "Give me ordering recommendations",
+            "Tips for food truck inventory management"
+        );
+    }
+}

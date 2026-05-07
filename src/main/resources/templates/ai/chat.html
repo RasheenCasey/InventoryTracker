@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>AI Inventory Assistant</title>
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .chat-container {
+            height: 400px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 18px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background: #4ecdc4;
+            margin-left: auto;
+            text-align: right;
+        }
+        .ai-message {
+            background: rgba(255, 255, 255, 0.2);
+            margin-right: auto;
+        }
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .chat-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+        .chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .send-btn {
+            padding: 15px 30px;
+            background: #4ecdc4;
+            border: none;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .send-btn:hover {
+            background: #45b7d1;
+            transform: scale(1.05);
+        }
+        .suggestions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .suggestion-card {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .suggestion-card:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-3px);
+        }
+        .nav-link {
+            background: #ff6b6b;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 8px;
+            display: inline-block;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .nav-link:hover {
+            background: #e55a5a;
+        }
+        .typing-indicator {
+            display: none;
+            color: rgba(255, 255, 255, 0.7);
+            font-style: italic;
+        }
+        .typing-indicator.active {
+            display: block;
+        }
+
+        .navbar {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: -20px -20px 20px -20px;
+        }
+
+        .navbar-brand {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <a th:href="@{/}" class="navbar-brand">🍔 Food Truck Inventory</a>
+        <div class="nav-links">
+            <a th:href="@{/}">Home</a>
+            <a th:href="@{/login}">Login</a>
+            <a th:href="@{/inventory}">Inventory</a>
+            <a th:href="@{/ai/chat}">AI Assistant</a>
+        </div>
+    </nav>
+
+<div class="container">
+    <div class="header">
+        <h1>AI Inventory Assistant</h1>
+        <p>Your intelligent food truck inventory helper</p>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="message ai-message">
+            Hello! I'm your AI inventory assistant. I can help you manage your food truck inventory, track low stock items, suggest reorder quantities, and provide inventory tips. How can I help you today?
+        </div>
+    </div>
+
+    <div class="typing-indicator" id="typingIndicator">
+        AI is thinking...
+    </div>
+
+    <div class="input-container">
+        <input type="text" id="chatInput" class="chat-input" placeholder="Ask me about inventory, low stock, ordering, or anything else..." />
+        <button onclick="sendMessage()" class="send-btn">Send</button>
+    </div>
+
+    <div class="suggestions">
+        <h3 style="text-align: center; margin-bottom: 15px;">Quick Actions</h3>
+        <div th:each="suggestion : ${suggestions}" class="suggestion-card" th:data-suggestion="${suggestion}" onclick="sendSuggestion(this.getAttribute('data-suggestion'))">
+            <span th:text="${suggestion}">Suggestion</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatContainer = document.getElementById('chatContainer');
+    const chatInput = document.getElementById('chatInput');
+    const typingIndicator = document.getElementById('typingIndicator');
+
+    function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+
+        // Add user message
+        addMessage(message, 'user');
+        chatInput.value = '';
+
+        // Show typing indicator
+        typingIndicator.classList.add('active');
+
+        // Send to AI
+        fetch('/ai/ask', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]')?.content || ''
+            },
+            body: JSON.stringify({ message: message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            typingIndicator.classList.remove('active');
+            addMessage(data.response, 'ai');
+        })
+        .catch(error => {
+            typingIndicator.classList.remove('active');
+            addMessage('Sorry, I encountered an error. Please try again.', 'ai');
+        });
+    }
+
+    function addMessage(text, sender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message`;
+        messageDiv.textContent = text;
+        chatContainer.appendChild(messageDiv);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+
+    function sendSuggestion(suggestion) {
+        if (!suggestion) return;
+        chatInput.value = suggestion;
+        sendMessage();
+    }
+
+    // Enter key to send
+    chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    // Welcome message
+    setTimeout(() => {
+        addMessage('Try asking me about "low stock" or "how to add items"!', 'ai');
+    }, 2000);
+</script>
+
+</body>
+</html>

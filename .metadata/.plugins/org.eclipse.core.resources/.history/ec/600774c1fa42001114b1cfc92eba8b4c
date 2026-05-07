@@ -1,0 +1,75 @@
+package com.Inventory.productsheet.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.Inventory.productsheet.model.InventoryItem;
+import com.Inventory.productsheet.model.InventoryOrder;
+import com.Inventory.productsheet.repository.InventoryRepository;
+import com.Inventory.productsheet.repository.InventoryOrderRepository;
+
+@Service
+public class InventoryServiceImpl implements InventoryService {
+
+    @Autowired
+    private InventoryRepository inventoryRepository;
+
+    @Autowired
+    private InventoryOrderRepository orderRepository;
+
+    // ✅ Get all inventory
+    @Override
+    public List<InventoryItem> getAllItems() {
+        return inventoryRepository.findAll();
+    }
+
+    // ✅ Add new item
+    @Override
+    public void addItem(InventoryItem item) {
+        inventoryRepository.save(item);
+    }
+
+    // ✅ Restock (manual)
+    @Override
+    public void restockItem(Long id, int amount) {
+        InventoryItem item = inventoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        item.setQuantity(item.getQuantity() + amount);
+        inventoryRepository.save(item);
+    }
+
+    // ✅ Order from distributor (creates order history)
+    @Override
+    public void orderFromDistributor(Long id, int amount) {
+
+        InventoryItem item = inventoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        // 🔹 Create order record
+        InventoryOrder order = new InventoryOrder();
+        order.setItemName(item.getName());
+        order.setQuantity(amount);
+        order.setStatus("PENDING");
+        order.setOrderDate(LocalDateTime.now());
+
+        orderRepository.save(order);
+
+        // 🔹 Simulate delivery (instant for now)
+        item.setQuantity(item.getQuantity() + amount);
+        inventoryRepository.save(item);
+
+        // 🔹 Update order status
+        order.setStatus("DELIVERED");
+        orderRepository.save(order);
+    }
+
+    // ✅ Get order history
+    @Override
+    public List<InventoryOrder> getAllOrders() {
+        return orderRepository.findAll();
+    }
+}

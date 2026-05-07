@@ -1,0 +1,27 @@
+package com.Inventory.productsheet.service;
+
+import java.util.List;
+
+import com.Inventory.productsheet.model.InventoryItem;
+import com.Inventory.productsheet.model.InventoryOrder;
+
+public interface InventoryService {
+
+	List<InventoryItem> getAllItems();
+
+	void addItem(InventoryItem item);
+
+	void restockItem(Long id, int amount);
+
+	void orderFromDistributor(Long id, int amount);
+
+	List<InventoryOrder> getAllOrders();
+
+	void markOrderDelivered(Long orderId);
+
+	void updateStock(Long id, int quantity); // ✅ ONLY declaration
+
+	void deleteItem(Long id);
+	
+	void solfDeleteItem(Long id);
+}

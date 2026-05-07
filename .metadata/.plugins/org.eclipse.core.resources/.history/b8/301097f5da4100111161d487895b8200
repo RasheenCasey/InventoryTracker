@@ -1,0 +1,5 @@
+package com.Inventory.productsheet.controllers;
+
+public class InventoryViewController {
+
+}

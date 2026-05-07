@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Food Truck Inventory</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+</head>
+<body class="home-page">
+
+<div class="home-container">
+    <div class="home-box">
+        <div class="home-header">
+            <img th:src="@{/images/logo.png}" alt="Food Truck Inventory" class="home-logo" />
+        </div>
+        
+        <p class="home-description">
+            A simple inventory management system for food trucks. 
+            Keep track of your ingredients, get low stock alerts, and manage orders.
+        </p>
+
+        <a th:href="@{/login}" class="btn btn-primary btn-large">Login to Continue</a>
+
+        <div class="features">
+            <h3>What this app does:</h3>
+            <ul>
+                <li>📦 Add and track inventory items</li>
+                <li>⚠️ Get alerts when stock is running low</li>
+                <li>🛒 Place orders with suppliers</li>
+                <li>📱 Scan QR codes to add items quickly</li>
+                <li>🤖 Chat with AI for inventory help</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Food Truck Inventory</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: white;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f4f6f8;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .low-stock {
+            background-color: #ffe6e6;
+            color: #b00000;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 8px 12px;
+            cursor: pointer;
+            border: none;
+            background-color: #2ecc71;
+            color: white;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background-color: #27ae60;
+        }
+
+        input {
+            padding: 6px;
+            margin-right: 6px;
+        }
+
+        .add-form {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Ingredient Inventory</h1>
+
+<!-- ✅ Add Inventory Item Form -->
+<div class="add-form">
+    <form th:action="@{/inventory/add}" method="post">
+        <input type="text" name="name" placeholder="Item name" required>
+        <input type="number" name="quantity" min="1" placeholder="Quantity" required>
+        <input type="text" name="unit" placeholder="Unit (lbs, pcs)" required>
+        <input type="number" name="reorderLevel" min="0" placeholder="Reorder level" required>
+        <button type="submit">Add Item</button>
+    </form>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Quantity</th>
+            <th>Unit</th>
+            <th>Reorder Level</th>
+            <th>Status</th>
+            <th>Restock</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        <!-- ✅ inventoryItem used everywhere -->
+        <tr th:each="inventoryItem : ${inventoryItems}">
+            <td th:text="${inventoryItem.name}"></td>
+            <td th:text="${inventoryItem.quantity}"></td>
+            <td th:text="${inventoryItem.unit}"></td>
+            <td th:text="${inventoryItem.reorderLevel}"></td>
+
+            <!-- ✅ Status -->
+            <td>
+                <span th:if="${inventoryItem.quantity <= inventoryItem.reorderLevel}"
+                      class="low-stock">
+                    ⚠ LOW
+                </span>
+                <span th:unless="${inventoryItem.quantity <= inventoryItem.reorderLevel}">
+                    OK
+                </span>
+            </td>
+
+            <!-- ✅ Restock -->
+            <td>
+                <form th:action="@{/inventory/restock}" method="post">
+                    <input type="hidden" name="id" th:value="${inventoryItem.id}">
+                    <input type="number" name="amount" min="1" placeholder="Qty" required>
+                    <button type="submit">Add</button>
+                </form>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<div style="margin-top: 30px; text-align: center; color: #7f8c8d;">
+</div>
+
+</body>
+</html>

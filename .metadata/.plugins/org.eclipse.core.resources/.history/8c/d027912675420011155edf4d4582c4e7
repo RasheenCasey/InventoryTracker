@@ -1,0 +1,40 @@
+package com.Inventory.productsheet.controller;
+
+import java.util.List;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.Inventory.productsheet.model.Ingredient;
+import com.Inventory.productsheet.repository.IngredientRepository;
+
+import jakarta.transaction.Transactional;
+
+@Controller // 👉 Serves HTML views, not JSON!
+@RequestMapping("/inventory")
+public class IngredientController {
+    private final IngredientRepository ingredientRepository;
+    public IngredientController(IngredientRepository ingredientRepository) {
+        this.ingredientRepository = ingredientRepository;
+    }
+    @GetMapping
+    public String getAllIngredients(Model model) {
+        List<Ingredient> ingredients = ingredientRepository.findByActiveTrue();
+        model.addAttribute("ingredients", ingredients);
+        return "inventory"; // ✅ Renders inventory.html template!
+    }
+    @PostMapping("/restock/{id}")
+    @Transactional 
+    public String restock(@PathVariable Long id, @RequestParam int amount) {
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ingredient not found: " + id));
+        ingredient.setQuantity(ingredient.getQuantity() + amount);
+        ingredientRepository.save(ingredient);
+        return "inventory"; // Re-renders page with updated quantity
+    }
+}

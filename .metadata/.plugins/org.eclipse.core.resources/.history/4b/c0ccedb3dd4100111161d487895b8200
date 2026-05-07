@@ -1,0 +1,50 @@
+package com.Inventory.productsheet.controller;
+
+import com.Inventory.productsheet.model.Ingredient;
+import com.Inventory.productsheet.repository.IngredientRepository;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/ingredients")
+public class IngredientController {
+
+    private final IngredientRepository ingredientRepository;
+
+    public IngredientController(IngredientRepository ingredientRepository) {
+        this.ingredientRepository = ingredientRepository;
+    }
+
+    @GetMapping
+    public List<Ingredient> getAllIngredients() {
+        return ingredientRepository.findByActiveTrue();
+    }
+
+    @GetMapping("/low-stock")
+    public List<Ingredient> getLowStockIngredients() {
+        return ingredientRepository.findAll()
+                .stream()
+                .filter(Ingredient::isLowStock)
+                .toList();
+    }
+
+    // ✅ USE POST ONLY
+    @PostMapping("/{id}/restock")
+    public String restockIngredient(
+            @PathVariable Long id,
+            @RequestParam int amount
+    ) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Restock amount must be greater than zero");
+        }
+
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ingredient not found"));
+
+        ingredient.setQuantity(ingredient.getQuantity() + amount);
+        ingredientRepository.save(ingredient);
+
+        return "redirect:/inventory";
+    }
+}

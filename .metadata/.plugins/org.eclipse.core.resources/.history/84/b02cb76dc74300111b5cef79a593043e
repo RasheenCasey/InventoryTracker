@@ -1,0 +1,12 @@
+package com.Inventory.productsheet.repository;
+
+import com.Inventory.productsheet.model.InventoryItem;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface InventoryRepository extends JpaRepository<InventoryItem, Long> {
+	
+	InventoryItem findByName(String name);
+	List<InventoryItem> findByDeletedFalse();
+}

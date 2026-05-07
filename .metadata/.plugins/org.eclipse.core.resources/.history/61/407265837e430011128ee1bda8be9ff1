@@ -1,0 +1,101 @@
+package com.Inventory.productsheet.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Random;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.Inventory.productsheet.model.InventoryItem;
+import com.Inventory.productsheet.model.InventoryOrder;
+import com.Inventory.productsheet.repository.InventoryRepository;
+import com.Inventory.productsheet.repository.InventoryOrderRepository;
+
+@Service
+public class InventoryServiceImpl implements InventoryService {
+
+	@Autowired
+	private InventoryRepository inventoryRepository;
+
+	@Autowired
+	private InventoryOrderRepository orderRepository;
+
+	// ✅ Get all inventory
+	@Override
+	public List<InventoryItem> getAllItems() {
+		return inventoryRepository.findAll();
+	}
+
+	// ✅ Add new item
+	@Override
+	public void addItem(InventoryItem item) {
+		inventoryRepository.save(item);
+	}
+
+	// ✅ Restock (manual)
+	@Override
+	public void restockItem(Long id, int amount) {
+		InventoryItem item = inventoryRepository.findById(id).orElseThrow(() -> new RuntimeException("Item not found"));
+
+		item.setQuantity(item.getQuantity() + amount);
+		inventoryRepository.save(item);
+	}
+
+	@Override
+	public void orderFromDistributor(Long id, int amount) {
+	    InventoryItem item = inventoryRepository.findById(id)
+	            .orElseThrow(() -> new RuntimeException("Item not found"));
+
+	    // ✅ Create NEW Order with valid ID (not relying on item.id!)
+	    InventoryOrder order = new InventoryOrder();
+
+	    // ❌ Remove this line entirely:
+	    // order.setId(item.getId());
+
+	    // ✅ Set only the correct fields
+	    order.setItemName(item.getName());
+	    order.setQuantity(amount);
+	    order.setStatus("PENDING");
+	    order.setOrderDate(LocalDateTime.now());
+
+	    // 🔥 Assign a UNIQUE ID to THIS ORDER (not linked to item)
+	    // Use UUID or just increment counter here for demo safety
+
+	    // Option 1: Generate random Long (safe fallback)
+	    long uniqueId = new Random().nextLong() % Integer.MAX_VALUE;
+	    order.setId(uniqueId); 
+
+	    orderRepository.save(order);
+	}
+
+	// ✅ Get order history
+	@Override
+	public List<InventoryOrder> getAllOrders() {
+		return orderRepository.findAll();
+
+	}
+
+	@Override
+	public void markOrderDelivered(Long orderId) {
+
+	    InventoryOrder order = orderRepository.findById(orderId)
+	            .orElseThrow(() -> new RuntimeException("Order not found"));
+
+	    if (!order.getStatus().equals("DELIVERED")) {
+	        // ✅ Use order.id directly (not item id!)
+	        InventoryItem item = inventoryRepository.findById(order.getId())
+	                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+	        // ✅ update stock
+	        item.setQuantity(item.getQuantity() + order.getQuantity());
+	        inventoryRepository.save(item);
+
+	        // ✅ update order status
+	        order.setStatus("DELIVERED");
+	        orderRepository.save(order);
+	    }
+	}
+
+
+}

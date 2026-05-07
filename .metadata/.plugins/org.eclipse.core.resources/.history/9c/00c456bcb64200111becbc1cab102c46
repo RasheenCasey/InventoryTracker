@@ -1,0 +1,18 @@
+# App name
+spring.application.name=productsheet
+
+# Database connection
+spring.datasource.url=jdbc:mysql://localhost:3306/productcatalog
+spring.datasource.username=root
+spring.datasource.password=470553Dre$
+
+# JPA Configuration - Critical!
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+
+
+# ✅ This tells Spring to run data.sql on startup!
+spring.sql.init.mode=always
+# Ensure home page is served properly and doesn't conflict with inventory
+spring.mvc.view.prefix=/templates/
+spring.mvc.view.suffix=.html

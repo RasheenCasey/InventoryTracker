@@ -1,0 +1,7 @@
+-- Insert initial ingredients into database (no extra lines or comments)
+INSERT INTO ingredients (name, unit, quantity, reorder_level, active) VALUES 
+('Ground Beef', 'lbs', 40, 20, true),
+('Burger Buns', 'packages', 10, 5, true),
+('Potatoes', 'lbs', 100, 30, true),
+('Ketchup', 'bottles', 6, 3, true),
+('Soda Syrup', 'boxes', 2, 4, true);

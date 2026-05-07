@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Login - Food Truck Inventory</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+</head>
+
+<body>
+
+<div class="login-container">
+    <div class="login-box">
+        <img th:src="@{/images/logo.png}" alt="Food Truck Inventory" class="login-logo" />
+        <h2>Login</h2>
+
+        <form th:action="@{/login}" method="post" class="login-form">
+            <div class="form-group">
+                <input type="text" name="username" placeholder="Username" required>
+            </div>
+            <div class="form-group">
+                <input type="password" name="password" placeholder="Password" required>
+            </div>
+
+            <button type="submit" class="btn-login">Sign In</button>
+
+            <!-- Optional error message -->
+            <p th:if="${param.error}" class="error">
+                Invalid username or password
+            </p>
+        </form>
+    </div>
+</div>
+
+</body>
+</html>

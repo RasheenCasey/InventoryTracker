@@ -1,0 +1,7 @@
+description.autobuilding=false
+description.filestatelongevity=7776000000
+description.maxfilestates=500
+description.maxfilestatesize=10485760
+eclipse.preferences.version=1
+encoding=UTF-8
+version=1

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Food Truck Inventory</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            background-color: rgba(255, 255, 255, 0.12);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 2rem;
+            text-shadow: 2px 2px 8px rgba(0,0,0,0.4);
+        }
+
+        /* FORM */
+        .add-form {
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        input {
+            padding: 10px;
+            margin: 6px;
+            border: none;
+            border-radius: 8px;
+            outline: none;
+            font-size: 0.9rem;
+        }
+
+        input:focus {
+            box-shadow: 0 0 8px rgba(255,255,255,0.6);
+        }
+
+        button {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: white;
+            color: #ff6b6b;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        /* TABLE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: rgba(255,255,255,0.2);
+            font-size: 1rem;
+        }
+
+        tr {
+            background-color: rgba(255,255,255,0.08);
+            transition: 0.3s;
+        }
+
+        tr:hover {
+            background-color: rgba(255,255,255,0.2);
+        }
+
+        td {
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* LOW STOCK */
+        .low-stock {
+            background-color: rgba(255, 0, 0, 0.2);
+            color: #ffe6e6;
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .ok-status {
+            color: #d4ffd4;
+            font-weight: bold;
+        }
+
+        .restock-form input {
+            width: 70px;
+            padding: 6px;
+        }
+
+        .restock-form button {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>Ingredient Inventory</h1>
+
+    <!-- Add Item -->
+    <div class="add-form">
+        <form th:action="@{/inventory/add}" method="post">
+            <input type="text" name="name" placeholder="Item name" required>
+            <input type="number" name="quantity" min="1" placeholder="Quantity" required>
+            <input type="text" name="unit" placeholder="Unit (lbs, pcs)" required>
+            <input type="number" name="reorderLevel" min="0" placeholder="Reorder level" required>
+            <button type="submit">Add Item</button>
+        </form>
+    </div>
+
+    <!-- Inventory Table -->
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Quantity</th>
+                <th>Unit</th>
+                <th>Reorder Level</th>
+                <th>Status</th>
+                <th>Restock</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr th:each="inventoryItem : ${inventoryItems}">
+                <td th:text="${inventoryItem.name}"></td>
+                <td th:text="${inventoryItem.quantity}"></td>
+                <td th:text="${inventoryItem.unit}"></td>
+                <td th:text="${inventoryItem.reorderLevel}"></td>
+
+                <!-- Status -->
+                <td>
+                    <span th:if="${inventoryItem.quantity <= inventoryItem.reorderLevel}"
+                          class="low-stock">
+                        ⚠ LOW
+                    </span>
+                    <span th:unless="${inventoryItem.quantity <= inventoryItem.reorderLevel}"
+                          class="ok-status">
+                        OK
+                    </span>
+                </td>
+
+                <!-- Restock -->
+                <td>
+                    <form th:action="@{/inventory/restock}" method="post" class="restock-form">
+                        <input type="hidden" name="id" th:value="${inventoryItem.id}">
+                        <input type="number" name="amount" min="1" placeholder="Qty" required>
+                        <button type="submit">Add</button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+</div>
+
+</body>
+</html>

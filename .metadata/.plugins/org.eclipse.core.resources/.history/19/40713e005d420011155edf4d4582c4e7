@@ -1,0 +1,9 @@
+spring.application.name=productsheet
+
+
+spring.datasource.url=jdbc:mysql://localhost:3306/productcatalog
+spring.datasource.username=root
+spring.datasource.password=470553Dre$
+spring.jpa.hibernate.ddl-auto=create-drop
+spring.sql.init.mode=always
+spring.jpa.defer-datasource-initialization=true

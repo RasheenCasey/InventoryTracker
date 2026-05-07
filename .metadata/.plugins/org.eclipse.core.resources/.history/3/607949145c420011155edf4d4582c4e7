@@ -1,0 +1,41 @@
+package com.Inventory.productsheet.controller;
+
+import com.Inventory.productsheet.model.Ingredient;
+import com.Inventory.productsheet.repository.IngredientRepository;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+import jakarta.transaction.Transactional; // ✅ Correct import
+
+@RestController
+@RequestMapping("/ingredients")
+public class IngredientController {
+
+    private final IngredientRepository ingredientRepository;
+
+    public IngredientController(IngredientRepository ingredientRepository) {
+        this.ingredientRepository = ingredientRepository;
+    }
+
+    @GetMapping
+    public List<Ingredient> getAllIngredients() {
+        return ingredientRepository.findByActiveTrue();
+    }
+
+    @PostMapping("/restock/{id}")
+    @Transactional // 👈 Now valid!
+    public String restock(@PathVariable Long id,
+                          @RequestParam int amount) {
+
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ingredient not found: " + id));
+
+        ingredient.setQuantity(ingredient.getQuantity() + amount);
+        ingredientRepository.save(ingredient);
+
+        return "Restocked successfully!";
+    }
+}
+``*

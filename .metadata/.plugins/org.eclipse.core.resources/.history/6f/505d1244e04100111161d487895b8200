@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Food Truck Inventory</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        .low-stock {
+            background-color: #ffe6e6;
+            color: #b00000;
+            font-weight: bold;
+        }
+        button {
+            padding: 6px 12px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Ingredient Inventory</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Quantity</th>
+            <th>Unit</th>
+            <th>Reorder Level</th>
+            <th>Status</th>
+            <th>Restock</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:each="ingredient : ${ingredients}"
+            th:class="${ingredient.quantity <= ingredient.reorderLevel} ? 'low-stock'">
+
+            <td th:text="${ingredient.name}"></td>
+            <td th:text="${ingredient.quantity}"></td>
+            <td th:text="${ingredient.unit}"></td>
+            <td th:text="${ingredient.reorderLevel}"></td>
+
+            <td>
+                <span th:if="${ingredient.quantity <= ingredient.reorderLevel}">
+                    ⚠ LOW
+                </span>
+                <span th:if="${ingredient.quantity > ingredient.reorderLevel}">
+                    OK
+                </span>
+            </td>
+
+            <td>
+                <form th:action="@{/inventory/restock/{id}(id=${ingredient.id})}"
+      method="post" style="display:flex; gap:6px; align-items:centerolder="Qty"
+           style="width:70px;"
+           required />
+    <button type="submit">Restock</button>
+</form>
+            </td>
+
+        </tr>
+    </tbody>
+</table>
+
+</body>
+</html>

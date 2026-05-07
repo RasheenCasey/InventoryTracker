@@ -1,0 +1,45 @@
+package com.Inventory.productsheet.controller;
+
+import com.Inventory.productsheet.model.Ingredient;
+import com.Inventory.productsheet.repository.IngredientRepository;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/ingredients")
+public class IngredientController {
+
+    private final IngredientRepository ingredientRepository;
+
+    public IngredientController(IngredientRepository ingredientRepository) {
+        this.ingredientRepository = ingredientRepository;
+    }
+
+    @GetMapping
+    public List<Ingredient> getAllIngredients() {
+        return ingredientRepository.findByActiveTrue();
+    }
+
+    @GetMapping("/low-stock")
+    public List<Ingredient> getLowStockIngredients() {
+        return ingredientRepository.findAll()
+                .stream()
+                .filter(ingredient -> ingredient.isLowStock()) // ✅ Now valid!
+                .toList();
+    }
+
+
+    // ✅ API restock (JSON clients, Postman, etc.)
+    @PatchMapping("/{id}/restock")
+    public Ingredient restockIngredient(
+            @PathVariable Long id,
+            @RequestParam int amount
+    ) {
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow();
+
+        ingredient.setQuantity(ingredient.getQuantity() + amount);
+        return ingredientRepository.save(ingredient);
+    }
+}

@@ -1,0 +1,67 @@
+package com.Inventory.productsheet.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.Inventory.productsheet.model.InventoryItem;
+import com.Inventory.productsheet.repository.InventoryRepository;
+
+@Controller
+public class InventoryController {
+
+    private final InventoryRepository repository;
+
+    public InventoryController(InventoryRepository repository) {
+        this.repository = repository;
+    }
+
+    // ✅ Landing page
+    @GetMapping("/")
+    public String index() {
+        return "index";
+    }
+
+    // ✅ Inventory dashboard
+    @GetMapping("/inventory")
+    public String inventory(Model model) {
+        model.addAttribute("inventoryItems", repository.findAll());
+        return "inventory";
+    }
+
+    // ✅ Add ingredient
+    @PostMapping("/inventory/add")
+    public String addLineItem(
+            @RequestParam String name,
+            @RequestParam int quantity,
+            @RequestParam String unit,
+            @RequestParam int reorderLevel) {
+
+        InventoryItem inventoryItem = new InventoryItem();
+        inventoryItem.setName(name);
+        inventoryItem.setQuantity(quantity);
+        inventoryItem.setUnit(unit);
+        inventoryItem.setReorderLevel(reorderLevel);
+
+        repository.save(inventoryItem);
+
+        return "redirect:/inventory";
+    }
+
+    // ✅ Restock ingredient
+    @PostMapping("/inventory/restock")
+    public String restock(
+            @RequestParam Long id,
+            @RequestParam int amount) {
+
+        InventoryItem inventoryItem = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid item ID: " + id));
+
+        inventoryItem.setQuantity(inventoryItem.getQuantity() + amount);
+        repository.save(inventoryItem);
+
+        return "redirect:/inventory";
+    }
+}

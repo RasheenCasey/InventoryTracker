@@ -1,0 +1,15 @@
+
+INSERT INTO ingredients (name, unit, quantity, reorder_level, active)
+VALUES ('Ground Beef', 'lbs', 40, 20, true);
+
+INSERT INTO ingredients (name, unit, quantity, reorder_level, active)
+VALUES ('Burger Buns', 'packages', 10, 5, true);
+
+INSERT INTO ingredients (name, unit, quantity, reorder_level, active)
+VALUES ('Potatoes', 'lbs', 100, 30, true);
+
+INSERT INTO ingredients (name, unit, quantity, reorder_level, active)
+VALUES ('Ketchup', 'bottles', 6, 3, true);
+
+INSERT INTO ingredients (name, unit, quantity, reorder_level, active)
+VALUES ('Soda Syrup', 'boxes', 2, 4, true);

@@ -1,0 +1,116 @@
+package com.Inventory.productsheet.controller;
+
+import com.Inventory.productsheet.model.Sale;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDateTime;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+
+@Controller
+@RequestMapping("/sales")
+public class SalesController {
+
+    private final SalesService salesService;
+
+    public SalesController(SalesService salesService) {
+        this.salesService = salesService;
+    }
+
+    // Sales dashboard
+    @GetMapping("/dashboard")
+    public String salesDashboard(Model model) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime weekAgo = now.minusWeeks(1);
+        
+        model.addAttribute("totalRevenue", salesService.getTotalRevenue(weekAgo, now));
+        model.addAttribute("topItems", salesService.getTopSellingItems(weekAgo, now, 5));
+        model.addAttribute("dailySales", salesService.getDailySalesSummary(weekAgo, now));
+        model.addAttribute("paymentMethods", salesService.getSalesByPaymentMethod(weekAgo, now));
+        model.addAttribute("peakHours", salesService.getPeakSalesHours(weekAgo, now));
+        
+        return "sales/dashboard";
+    }
+
+    // Record new sale (POS integration)
+    @PostMapping("/record")
+    @ResponseBody
+    public Map<String, String> recordSale(@RequestBody Sale sale) {
+        try {
+            salesService.recordSale(sale);
+            return Map.of("status", "success", "message", "Sale recorded successfully");
+        } catch (Exception e) {
+            return Map.of("status", "error", "message", "Failed to record sale: " + e.getMessage());
+        }
+    }
+
+    // Analytics endpoints
+    @GetMapping("/revenue")
+    @ResponseBody
+    public Map<String, Object> getRevenue(
+            @RequestParam(required = false) String start,
+            @RequestParam(required = false) String end) {
+        
+        LocalDateTime startTime = start != null ? LocalDateTime.parse(start) : LocalDateTime.now().minusWeeks(1);
+        LocalDateTime endTime = end != null ? LocalDateTime.parse(end) : LocalDateTime.now();
+        
+        BigDecimal revenue = salesService.getTotalRevenue(startTime, endTime);
+        return Map.of(
+            "revenue", revenue,
+            "period", Map.of("start", startTime, "end", endTime)
+        );
+    }
+
+    @GetMapping("/forecast")
+    @ResponseBody
+    public Map<String, Object> getForecast(@RequestParam String baseDate) {
+        LocalDateTime date = LocalDateTime.parse(baseDate);
+        
+        return Map.of(
+            "weeklyRevenue", salesService.forecastWeeklyRevenue(date),
+            "ingredientForecast", salesService.forecastIngredientUsage(date, 7)
+        );
+    }
+
+    @GetMapping("/menu-performance")
+    @ResponseBody
+    public Map<String, BigDecimal> getMenuPerformance(
+            @RequestParam(required = false) String start,
+            @RequestParam(required = false) String end) {
+        
+        LocalDateTime startTime = start != null ? LocalDateTime.parse(start) : LocalDateTime.now().minusWeeks(1);
+        LocalDateTime endTime = end != null ? LocalDateTime.parse(end) : LocalDateTime.now();
+        
+        return salesService.getMenuItemPerformance(startTime, endTime);
+    }
+
+    // Manual sale entry form
+    @GetMapping("/entry")
+    public String saleEntryForm(Model model) {
+        // Add any necessary model attributes for the form
+        return "sales/entry";
+    }
+
+    // API endpoint for POS integration
+    @PostMapping("/api/pos")
+    @ResponseBody
+    public Map<String, String> posIntegration(@RequestBody Map<String, Object> posData) {
+        try {
+            // Extract data from POS system
+            String menuItemName = (String) posData.get("menuItemName");
+            BigDecimal price = new BigDecimal(posData.get("price").toString());
+            int quantity = (Integer) posData.get("quantity");
+            String paymentMethod = (String) posData.get("paymentMethod");
+            
+            Sale sale = new Sale(menuItemName, price, quantity, paymentMethod);
+            salesService.recordSale(sale);
+            
+            return Map.of("status", "success", "message", "POS data integrated successfully");
+        } catch (Exception e) {
+            return Map.of("status", "error", "message", "POS integration failed: " + e.getMessage());
+        }
+    }
+}

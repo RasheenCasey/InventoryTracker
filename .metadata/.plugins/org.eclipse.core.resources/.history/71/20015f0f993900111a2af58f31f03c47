@@ -1,0 +1,40 @@
+package edu.vwcc.jdbc.repo;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+
+import edu.vwcc.jdbc.model.Purchase;
+
+@Repository
+public class PurchaseRepository {
+
+	private final JdbcClient jdbc;
+
+	public PurchaseRepository(JdbcClient jdbc) {
+		this.jdbc = jdbc;
+	}
+
+	public int storePurchase(Purchase purchase) {
+		return jdbc.sql("INSERT INTO purchase (product, price) VALUES (:product, :price)").paramSource(purchase)
+				.update();
+	}
+
+	public List<Purchase> findAllPurchases() {
+		return jdbc.sql("SELECT * FROM purchase").query(Purchase.class).list();
+	}
+
+	// Write Your Additional Repository Methods Here
+	
+	public int countPurchases() {
+		return jdbc.sql("SELECT COUNT(*) FROM purchase").query(Integer.class).single();
+	}
+	
+	public BigDecimal getTotalRevenue() {
+	logBefore(); 
+		
+		
+	}
+}

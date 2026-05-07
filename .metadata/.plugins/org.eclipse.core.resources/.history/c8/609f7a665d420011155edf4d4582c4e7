@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: productsheet
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/productcatalog
+    username: root
+    password: 470553Dre$
+  
+  jpa:
+    hibernate:
+      ddl-auto: update # ✅ Safe, doesn't drop DB on startup!
+    show-sql: true        # Optional: see SQL queries in logs!
+
+  sql:
+    init:
+      mode: always         # Ensures data.sql runs every time
+
+# Optional: Add if using H2 (for testing)
+# spring.datasource.url: jdbc:h2:mem:testdb
+# spring.jpa.database-platform: org.hibernate.dialect.H2Dialect

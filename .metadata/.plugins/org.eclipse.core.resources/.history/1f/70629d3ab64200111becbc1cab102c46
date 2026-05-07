@@ -1,0 +1,8 @@
+package com.Inventory.productsheet.repository;
+
+import com.Inventory.productsheet.model.IngredientItem;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.List;
+
+public interface InventoryRepository extends JpaRepository<InventoryItem, Long> {
+}

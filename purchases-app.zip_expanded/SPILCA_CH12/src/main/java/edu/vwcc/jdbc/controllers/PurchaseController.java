@@ -1,0 +1,80 @@
+package edu.vwcc.jdbc.controllers;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+
+import edu.vwcc.jdbc.model.Purchase;
+import edu.vwcc.jdbc.repo.PurchaseRepository;
+
+@RestController
+@RequestMapping("/purchases")
+public class PurchaseController {
+
+	private final PurchaseRepository purchaseRepository;
+
+	public PurchaseController(PurchaseRepository purchaseRepository) {
+		this.purchaseRepository = purchaseRepository;
+	}
+
+	@PostMapping
+	public void storePurchase(@RequestBody Purchase purchase) {
+		purchaseRepository.storePurchase(purchase);
+	}
+
+	@GetMapping
+	public List<Purchase> findPurchase() {
+		return purchaseRepository.findAllPurchases();
+	}
+
+	// Write your additional Controller Actions Here
+
+	@GetMapping("/count")
+	public int countPurchases() {
+		return purchaseRepository.countAllPurchases();
+	}
+
+	@GetMapping("/totalsales")
+	public BigDecimal getTotalSales() {
+		return purchaseRepository.getTotalRevenue();
+	}
+
+	@GetMapping("/avg")
+	public BigDecimal getAvgPurchasePrice() {
+		return purchaseRepository.getAvgPurchasePrice();
+	}
+
+	@GetMapping("/{id}")
+	public Purchase findPurchaseById(@PathVariable int id) {
+	    Purchase purchase = purchaseRepository.findPurchaseById(id);
+
+	    if (purchase == null) {
+	        throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+	    }
+
+	    return purchase;
+	}
+
+	@DeleteMapping("/{id}")
+	public void deletePurchaseById(@PathVariable int id) {
+	    purchaseRepository.deletePurchaseById(id);
+	}
+
+	@PatchMapping("/{id}/nocost")
+	public void updatePurchaseToNoCost(@PathVariable int id) {
+	    purchaseRepository.updatePurchaseToNoCost(id);
+	}
+
+
+}

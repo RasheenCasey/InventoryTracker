@@ -1,0 +1,96 @@
+package com.Inventory.productsheet.controller;
+
+import java.util.List;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import com.Inventory.productsheet.model.InventoryItem;
+import com.Inventory.productsheet.model.InventoryOrder;
+import com.Inventory.productsheet.service.InventoryService;
+
+@Controller
+public class InventoryController {
+
+	private final InventoryService inventoryService;
+
+	public InventoryController(InventoryService inventoryService) {
+		this.inventoryService = inventoryService;
+	}
+
+	// ---------------- DASHBOARD ----------------
+	@GetMapping("/inventory")
+	public String inventory(Model model) {
+
+		List<InventoryItem> items = inventoryService.getAllItems();
+		List<InventoryOrder> orders = inventoryService.getAllOrders();
+
+		long totalItems = items.size();
+
+		long lowStockCount = items.stream().filter(i -> i.getQuantity() <= i.getReorderLevel()).count();
+
+		model.addAttribute("inventoryItems", items);
+		model.addAttribute("orders", orders);
+
+		model.addAttribute("totalItems", totalItems);
+		model.addAttribute("lowStockCount", lowStockCount);
+
+		return "inventory";
+	}
+
+	// ---------------- INVENTORY ----------------
+
+	@PostMapping("/inventory/add")
+	public String addItem(@RequestParam String name, @RequestParam int quantity, @RequestParam String unit,
+			@RequestParam int reorderLevel) {
+
+		InventoryItem item = new InventoryItem();
+		item.setName(name);
+		item.setQuantity(quantity);
+		item.setUnit(unit);
+		item.setReorderLevel(reorderLevel);
+
+		inventoryService.addItem(item);
+
+		return "redirect:/inventory";
+	}
+
+	@PostMapping("/inventory/update")
+	public String updateStock(@RequestParam Long id, @RequestParam int quantity) {
+
+		inventoryService.updateStock(id, quantity);
+		return "redirect:/inventory";
+	}
+
+	// SOFT DELETE INVENTORY ITEM
+	@PostMapping("/inventory/delete/{id}")
+	public String deleteItem(@PathVariable Long id) {
+
+		inventoryService.softDeleteItem(id);
+		return "redirect:/inventory";
+	}
+
+	// ---------------- ORDERS ----------------
+
+	@PostMapping("/inventory/order")
+	public String orderItem(@RequestParam Long id, @RequestParam int amount) {
+
+		inventoryService.orderFromDistributor(id, amount);
+		return "redirect:/inventory";
+	}
+
+	@PostMapping("/orders/{id}/deliver")
+	public String markDelivered(@PathVariable Long id) {
+
+		inventoryService.markOrderDelivered(id);
+		return "redirect:/inventory";
+	}
+
+	@PostMapping("/orders/{id}/delete")
+	public String deleteOrder(@PathVariable Long id) {
+
+		inventoryService.deleteOrder(id);
+		return "redirect:/inventory";
+	}
+}

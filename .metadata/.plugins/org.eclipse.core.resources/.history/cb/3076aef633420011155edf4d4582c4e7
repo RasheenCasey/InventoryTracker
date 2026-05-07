@@ -1,0 +1,47 @@
+package com.Inventory.productsheet.controller;
+
+import com.Inventory.productsheet.model.Ingredient;
+import com.Inventory.productsheet.repository.IngredientRepository;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+@Controller
+public class InventoryViewController {
+
+    private final IngredientRepository ingredientRepository;
+
+    public InventoryViewController(IngredientRepository ingredientRepository) {
+        this.ingredientRepository = ingredientRepository;
+    }
+
+    @GetMapping("/inventory")
+    public String viewInventory(Model model) {
+        model.addAttribute("ingredients", ingredientRepository.findByActiveTrue());
+        return "inventory";
+    }
+
+    @GetMapping("/inventory/restock/{id}")
+    public String showRestockForm(@PathVariable Long id, Model model) {
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ingredient not found with ID: " + id));
+
+        model.addAttribute("ingredient", ingredient);
+        return "inventory";
+    }
+
+    @PostMapping("/inventory/restock/{id}")
+    public String restock(@PathVariable Long id,
+                          @RequestParam("amount") int amount,
+                          Model model) {
+
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ingredient not found: " + id));
+
+        ingredient.setQuantity(ingredient.getQuantity() + amount);
+        ingredientRepository.save(ingredient);
+
+        model.addAttribute("successMessage", "Restocked successfully!");
+        return "inventory";
+    }
+}

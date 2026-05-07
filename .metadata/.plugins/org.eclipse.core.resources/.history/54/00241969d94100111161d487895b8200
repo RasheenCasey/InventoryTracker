@@ -1,0 +1,14 @@
+INSERT INTO products (name, price, quantity, category, active)
+VALUES ('Cheeseburger', 7.99, 25, 'Entree', true);
+
+INSERT INTO products (name, price, quantity, category, active)
+VALUES ('HotDog', 7.49, 15, 'Entree', true);
+
+INSERT INTO products (name, price, quantity, category, active)
+VALUES ('French Fries', 3.49, 40, 'Side', true);
+
+INSERT INTO products (name, price, quantity, category, active)
+VALUES ('Soda', 1.99, 60, 'Drink', true);
+
+INSERT INTO products (name, price, quantity, category, active)
+VALUES ('Bottled Water', 1.49, 50, 'Drink', true);

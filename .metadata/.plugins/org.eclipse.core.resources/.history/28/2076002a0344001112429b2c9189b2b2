@@ -1,0 +1,31 @@
+package com.Inventory.productsheet.service;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+public interface SalesService {
+
+    // Record a new sale
+    void recordSale(Sale sale);
+
+    // Get sales data for projections
+    List<Sale> getSalesByDateRange(LocalDateTime start, LocalDateTime end);
+
+    // Analytics methods
+    BigDecimal getTotalRevenue(LocalDateTime start, LocalDateTime end);
+    List<Object[]> getTopSellingItems(LocalDateTime start, LocalDateTime end, int limit);
+    Map<String, BigDecimal> getSalesByPaymentMethod(LocalDateTime start, LocalDateTime end);
+    Map<String, BigDecimal> getDailySalesSummary(LocalDateTime start, LocalDateTime end);
+
+    // Forecasting methods
+    BigDecimal forecastWeeklyRevenue(LocalDateTime baseDate);
+    Map<String, Integer> forecastIngredientUsage(LocalDateTime baseDate, int daysAhead);
+    List<String> getPeakSalesHours(LocalDateTime start, LocalDateTime end);
+
+    // Menu performance
+    Map<String, BigDecimal> getMenuItemPerformance(LocalDateTime start, LocalDateTime end);
+    List<String> getLowPerformingMenuItems(LocalDateTime start, LocalDateTime end, BigDecimal threshold);
+}

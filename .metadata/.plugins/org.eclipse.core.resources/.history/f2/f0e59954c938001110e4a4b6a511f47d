@@ -1,0 +1,28 @@
+# Configure data source
+spring.datasource.url=jdbc:mariadb://localhost:3306/purchasedb
+spring.datasource.username=root
+spring.datasource.password=
+spring.datasource.driver-class-name=org.mariadb.jdbc.Driver
+
+# Disable developer tools
+spring.h2.console.enabled=false
+spring.devtools.add-properties=false
+
+# Disable detailed error messages
+server.error.include-stacktrace=never
+server.error.include-message=never
+
+# Optimize connection pool
+spring.datasource.hikari.maximum-pool-size=10
+spring.datasource.hikari.minimum-idle=5
+
+# Control SQL initialization
+spring.sql.init.mode=never
+
+# Appropriate logging levels
+logging.level.root=WARN
+logging.level.org.springframework=WARN
+logging.level.edu.vwcc.jdbc=INFO
+
+# Set a server port (if needed)
+# server.port=8080

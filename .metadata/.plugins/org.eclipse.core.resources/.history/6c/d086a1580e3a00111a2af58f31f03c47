@@ -1,0 +1,78 @@
+package edu.vwcc.jdbc.controllers;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import edu.vwcc.jdbc.model.Purchase;
+import edu.vwcc.jdbc.repo.PurchaseRepository;
+
+@RestController
+@RequestMapping("/purchases")
+public class PurchaseController {
+
+	private final PurchaseRepository purchaseRepository;
+
+	public PurchaseController(PurchaseRepository purchaseRepository) {
+		this.purchaseRepository = purchaseRepository;
+	}
+
+	@PostMapping
+	public void storePurchase(@RequestBody Purchase purchase) {
+		purchaseRepository.storePurchase(purchase);
+	}
+
+	@GetMapping
+	public List<Purchase> findPurchase() {
+		return purchaseRepository.findAllPurchases();
+	}
+
+	// Write your additional Controller Actions Here
+
+	@GetMapping("/count")
+	public int countPurchases() {
+		return purchaseRepository.countPurchases();
+	}
+
+	@GetMapping("/totalsales")
+	public BigDecimal getTotalSales() {
+		return purchaseRepository.getTotalRevenue();
+	}
+
+	@GetMapping("/avg")
+	public BigDecimal getAvgPurchasePrice() {
+		return purchaseRepository.getAvgPurchasePrice();
+	}
+
+	@GetMapping("/{id}")
+	public ResponseEntity<Purchase> findPurchaseById(@PathVariable int id) {
+		Purchase purchase = purchaseRepository.findPurchaseById(id);
+		if (purchase == null) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok(purchase);
+
+	}
+
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> deletePurchaseById(@PathVariable int id) {
+		purchaseRepository.deletePurchaseById(id);
+		return ResponseEntity.noContent().build();
+	}
+
+	@PatchMapping("/{id}/nocost")
+	public ResponseEntity<Void> updatePurchaseToNoCost(@PathVariable int id) {
+		purchaseRepository.updatePurchaseToNoCost(id);
+		return ResponseEntity.noContent().build();
+	}
+
+}

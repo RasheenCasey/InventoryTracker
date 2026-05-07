@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Food Truck Inventory</title>
+
+<style>
+body {
+	font-family: 'Segoe UI', sans-serif;
+	background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+	margin: 0;
+	padding: 20px;
+	min-height: 100vh;
+	color: white;
+}
+
+.container {
+	max-width: 1100px;
+	margin: auto;
+	background-color: rgba(255, 255, 255, 0.12);
+	padding: 30px;
+	border-radius: 16px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+	backdrop-filter: blur(10px);
+}
+
+h1 {
+	text-align: center;
+	margin-bottom: 25px;
+	font-size: 2rem;
+}
+
+.section-title {
+	margin-top: 30px;
+	margin-bottom: 10px;
+	font-size: 1.4rem;
+	border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+	padding-bottom: 5px;
+}
+
+/* FORM */
+.add-form {
+	margin-bottom: 25px;
+	text-align: center;
+}
+
+input {
+	padding: 10px;
+	margin: 6px;
+	border: none;
+	border-radius: 8px;
+	outline: none;
+}
+
+button {
+	padding: 10px 14px;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	background-color: white;
+	color: #ff6b6b;
+	font-weight: bold;
+	transition: 0.3s;
+}
+
+button:hover {
+	transform: scale(1.05);
+}
+
+/* TABLE */
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 15px;
+	border-radius: 10px;
+	overflow: hidden;
+}
+
+th, td {
+	padding: 12px;
+	text-align: center;
+}
+
+thead {
+	background: rgba(0, 0, 0, 0.2);
+}
+
+tr {
+	background-color: rgba(255, 255, 255, 0.08);
+}
+
+tr:hover {
+	background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* STATUS */
+.low-stock {
+	background-color: rgba(255, 0, 0, 0.2);
+	color: #ffe6e6;
+	font-weight: bold;
+	padding: 4px 8px;
+	border-radius: 6px;
+}
+
+.ok-status {
+	color: #d4ffd4;
+	font-weight: bold;
+}
+
+.pending {
+	color: #ffd166;
+	font-weight: bold;
+}
+
+.delivered {
+	color: #80ed99;
+	font-weight: bold;
+}
+
+/* BUTTON */
+.order-btn {
+	background-color: #4ecdc4;
+	color: white;
+}
+
+.order-btn:hover {
+	background-color: #38b2ac;
+}
+
+/* MODAL */
+.modal {
+	display: none;
+	position: fixed;
+	z-index: 1000;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.6);
+}
+
+.modal-content {
+	background: rgba(255, 255, 255, 0.12);
+	margin: 10% auto;
+	padding: 30px;
+	width: 350px;
+	border-radius: 16px;
+	text-align: center;
+	color: white;
+}
+
+.close {
+	float: right;
+	font-size: 24px;
+	cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+	<div class="container">
+		<h1>Ingredient Inventory</h1>
+
+		<!-- Add Item -->
+		<div class="add-form">
+			<form th:action="@{/inventory/add}" method="post">
+				<input type="text" name="name" placeholder="Item name" required>
+				<input type="number" name="quantity" min="1" placeholder="Quantity"
+					required> <input type="text" name="unit"
+					placeholder="Unit (lbs, pcs)" required> <input
+					type="number" name="reorderLevel" min="0"
+					placeholder="Reorder level" required>
+				<button type="submit">Add Item</button>
+			</form>
+		</div>
+
+		<!-- INVENTORY -->
+		<h2 class="section-title">Inventory</h2>
+
+		<table>
+			<thead>
+				<tr>
+					<th>Name</th>
+					<th>Qty</th>
+					<th>Unit</th>
+					<th>Reorder</th>
+					<th>Status</th>
+					<th>Order</th>
+				</tr>
+			</thead>
+
+			<tbody>
+				<tr th:each="inventoryItem : ${inventoryItems}">
+					<td th:text="${inventoryItem.name}"></td>
+					<td th:text="${inventoryItem.quantity}"></td>
+					<td th:text="${inventoryItem.unit}"></td>
+					<td th:text="${inventoryItem.reorderLevel}"></td>
+
+					<td><span
+						th:if="${inventoryItem.quantity <= inventoryItem.reorderLevel}"
+						class="low-stock"> ⚠ Low </span> <span
+						th:unless="${inventoryItem.quantity <= inventoryItem.reorderLevel}"
+						class="ok-status"> OK </span></td>
+
+					<td>
+						<button class="order-btn"
+							th:attr="data-id=${inventoryItem.id}, data-name=${inventoryItem.name}"
+							onclick="openOrderModal(this)">Order</button>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+		<!-- ORDERS -->
+		<h2 class="section-title">Orders</h2>
+
+		<table>
+			<thead>
+				<tr>
+					<th>Item</th>
+					<th>Qty</th>
+					<th>Status</th>
+				</tr>
+			</thead>
+
+			<tbody>
+				<tr th:each="order : ${orders}">
+					<td th:text="${order.itemName}"></td>
+					<td th:text="${order.quantity}"></td>
+
+					<td>
+						<!-- Status --> <span th:if="${order.status == 'PENDING'}"
+						class="pending">⏳ Pending</span> <span
+						th:if="${order.status == 'DELIVERED'}" class="delivered">✅
+							Delivered</span> <!-- Mark Delivered Button -->
+						<form th:if="${order.status == 'PENDING'}"
+							th:action="@{'/orders/' + ${order.id} + '/deliver'}"
+							method="post" style="margin-top: 5px;">
+
+							<!-- REQUIRED if using Spring Security -->
+							<input type="hidden" th:name="${_csrf.parameterName}"
+								th:value="${_csrf.token}" />
+
+							<button type="submit" class="deliver-btn">Mark Delivered</button>
+						</form>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+
+	</div>
+
+	<!-- MODAL -->
+	<div id="orderModal" class="modal">
+		<div class="modal-content">
+			<span class="close" onclick="closeOrderModal()">&times;</span>
+
+			<h2>Order Item</h2>
+
+			<form th:action="@{/inventory/order}" method="post">
+				<input type="hidden" name="id" id="modalItemId">
+
+				<p id="modalItemName"></p>
+
+				<input type="number" name="amount" min="1"
+					placeholder="Order Quantity" required>
+
+				<button type="submit">Place Order</button>
+			</form>
+
+		</div>
+	</div>
+
+	<script>
+		function openOrderModal(button) {
+			const modal = document.getElementById("orderModal");
+
+			const itemId = button.getAttribute("data-id");
+			const itemName = button.getAttribute("data-name");
+
+			document.getElementById("modalItemId").value = itemId;
+			document.getElementById("modalItemName").innerText = "Ordering: "
+					+ itemName;
+
+			modal.style.display = "block";
+		}
+
+		function closeOrderModal() {
+			document.getElementById("orderModal").style.display = "none";
+		}
+
+		window.onclick = function(event) {
+			const modal = document.getElementById("orderModal");
+			if (event.target === modal) {
+				modal.style.display = "none";
+			}
+		}
+	</script>
+
+</body>
+</html>

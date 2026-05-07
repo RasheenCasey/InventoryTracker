@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Food Truck Inventory</title>
+
+<style>
+body {
+	font-family: 'Segoe UI', sans-serif;
+	background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+	margin: 0;
+	padding: 20px;
+	min-height: 100vh;
+	color: white;
+}
+
+.container {
+	max-width: 1100px;
+	margin: auto;
+	background-color: rgba(255, 255, 255, 0.12);
+	padding: 30px;
+	border-radius: 16px;
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+	backdrop-filter: blur(10px);
+}
+
+h1 {
+	text-align: center;
+	margin-bottom: 25px;
+}
+
+.section-title {
+	margin-top: 30px;
+	border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+input, button {
+	padding: 10px;
+	margin: 6px;
+	border-radius: 8px;
+	border: none;
+}
+
+button {
+	cursor: pointer;
+	font-weight: bold;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+th, td {
+	padding: 12px;
+	text-align: center;
+}
+
+.low-stock {
+	color: #ffb3b3;
+	font-weight: bold;
+}
+
+.ok-status {
+	color: #d4ffd4;
+}
+
+.pending {
+	color: #ffd166;
+	font-weight: bold;
+}
+
+.delivered {
+	color: #80ed99;
+	font-weight: bold;
+}
+
+.order-btn, .deliver-btn {
+	background-color: #4ecdc4;
+	color: white;
+}
+
+/* MODAL */
+.modal {
+	display: none;
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, .6);
+}
+
+.modal-content {
+	background: rgba(255, 255, 255, .15);
+	margin: 10% auto;
+	padding: 20px;
+	width: 350px;
+	border-radius: 12px;
+	text-align: center;
+}
+
+.close {
+	float: right;
+	cursor: pointer;
+	font-size: 20px;
+}
+</style>
+</head>
+
+<body>
+
+	<div class="container">
+		<h1>Ingredient Inventory</h1>
+
+		<!-- ADD ITEM -->
+		<form th:action="@{/inventory/add}" method="post">
+			<input type="text" name="name" placeholder="Item name" required /> <input
+				type="number" name="quantity" min="1" placeholder="Quantity"
+				required /> <input type="text" name="unit" placeholder="Unit"
+				required /> <input type="number" name="reorderLevel" min="0"
+				placeholder="Reorder level" required />
+			<button type="submit">Add Item</button>
+		</form>
+
+		<!-- INVENTORY -->
+		<h2 class="section-title">Inventory</h2>
+		<table>
+			<tr th:each="inventoryItem : ${inventoryItems}">
+				<td th:text="${inventoryItem.name}"></td>
+				<td th:text="${inventoryItem.quantity}"></td>
+				<td th:text="${inventoryItem.unit}"></td>
+				<td th:text="${inventoryItem.reorderLevel}"></td>
+
+				<td><span
+					th:if="${inventoryItem.quantity <= inventoryItem.reorderLevel}"
+					class="low-stock">⚠ Low</span> <span
+					th:unless="${inventoryItem.quantity <= inventoryItem.reorderLevel}"
+					class="ok-status">OK</span></td>
+
+				<td>
+					<button class="order-btn"
+						th:attr="data-id=${inventoryItem.id},data-name=${inventoryItem.name}"
+						onclick="openOrderModal(this)">Order</button>
+				</td>
+			</tr>
+		</table>
+
+		<!-- ORDERS -->
+		<h2 class="section-title">Orders</h2>
+		<table>
+			<tr th:each="order : ${orders}">
+				<td th:text="${order.itemName}"></td>
+				<td th:text="${order.quantity}"></td>
+
+				<td><span th:if="${order.status == 'PENDING'}" class="pending">Pending</span>
+					<span th:if="${order.status == 'DELIVERED'}" class="delivered">Delivered</span>
+
+					<form th:if="${order.status == 'PENDING'}"
+						th:action="@{/orders/{id}/deliver}" method="post"
+						th:id="${order.id}">
+						<input type="hidden" name="_csrf" value="${_csrf.token}" />
+						<button class="deliver-btn">Mark Delivered</button>
+					</form></td>
+			</tr>
+		</table>
+	</div>
+
+	<!-- MODAL -->
+	<div id="orderModal" class="modal">
+		<div class="modal-content">
+			<span class="close" onclick="closeOrderModal()">×</span>
+			<h3>Order Item</h3>
+
+			<form th:action="@{/inventory/order}" method="post">
+				<p id="modalItemName"></p>
+				<input type="number" name="amount" min="1" required />
+				<button type="submit">Place Order</button>
+			</form>
+		</div>
+	</div>
+
+	<script>
+		function openOrderModal(button) {
+			document.getElementById("modalItemId").value = button.dataset.id;
+			document.getElementById("modalItemName").innerText = "Ordering: "
+					+ button.dataset.name;
+			document.getElementById("orderModal").style.display = "block";
+		}
+
+		function closeOrderModal() {
+			document.getElementById("orderModal").style.display = "none";
+		}
+	</script>
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+package com.Inventory.productsheet.controller;
+
+import com.Inventory.productsheet.repository.IngredientRepository;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Controller
+public class InventoryViewController {
+
+    private final IngredientRepository ingredientRepository;
+
+    public InventoryViewController(IngredientRepository ingredientRepository) {
+        this.ingredientRepository = ingredientRepository;
+    }
+
+    @GetMapping("/inventory")
+    public String viewInventory(Model model) {
+        model.addAttribute("ingredients", ingredientRepository.findByActiveTrue());
+        return "inventory";
+    }
+}

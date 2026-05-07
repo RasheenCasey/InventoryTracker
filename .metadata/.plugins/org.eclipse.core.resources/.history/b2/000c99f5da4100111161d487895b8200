@@ -1,0 +1,31 @@
+package com.Inventory.productsheet.controllers;
+
+import com.Inventory.productsheet.model.Ingredient;
+import com.Inventory.productsheet.repository.IngredientRepository;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/ingredients")
+public class IngredientController {
+
+    private final IngredientRepository ingredientRepository;
+
+    public IngredientController(IngredientRepository ingredientRepository) {
+        this.ingredientRepository = ingredientRepository;
+    }
+
+    @GetMapping
+    public List<Ingredient> getAllIngredients() {
+        return ingredientRepository.findByActiveTrue();
+    }
+
+    @GetMapping("/low-stock")
+    public List<Ingredient> getLowStockIngredients() {
+        return ingredientRepository.findAll()
+                .stream()
+                .filter(Ingredient::isLowStock)
+                .toList();
+    }
+}

@@ -1,0 +1,33 @@
+package com.Inventory.productsheet.controller;
+
+import com.Inventory.productsheet.model.Ingredient;
+import com.Inventory.productsheet.repository.IngredientRepository;
+
+import jakarta.transaction.Transactional;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+@Controller
+public class InventoryViewController {
+
+	private final IngredientRepository ingredientRepository;
+
+	public InventoryViewController(IngredientRepository ingredientRepository) {
+		this.ingredientRepository = ingredientRepository;
+	
+	}
+
+	@PostMapping("/inventory/restock/{id}")
+	@Transactional 
+	public String restock(@PathVariable Long id, @RequestParam int amount) {
+	    Ingredient ingredient = ingredientRepository.findById(id)
+	            .orElseThrow(() -> new IllegalArgumentException("Ingredient not found: " + id));
+	    ingredient.setQuantity(ingredient.getQuantity() + amount);
+	    ingredientRepository.save(ingredient);
+	    // Tell Thymeleaf to show success message
+	    return "inventory";  // ✅ Re-render same page (so UI updates!)
+	}
+
+}

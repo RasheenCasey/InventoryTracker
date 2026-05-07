@@ -1,0 +1,76 @@
+package com.Inventory.productsheet.controller;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import com.Inventory.productsheet.model.InventoryItem;
+import com.Inventory.productsheet.service.InventoryService;
+
+@Controller
+public class InventoryController {
+
+    private final InventoryService inventoryService;
+
+    // ✅ Constructor Injection
+    public InventoryController(InventoryService inventoryService) {
+        this.inventoryService = inventoryService;
+    }
+
+    // ✅ Landing page
+    @GetMapping("/")
+    public String index() {
+        return "index";
+    }
+
+    // ✅ Inventory dashboard
+    @GetMapping("/inventory")
+    public String inventory(Model model) {
+        model.addAttribute("inventoryItems", inventoryService.getAllItems());
+        return "inventory";
+    }
+
+    // ✅ Add ingredient
+    @PostMapping("/inventory/add")
+    public String addLineItem(@RequestParam String name,
+                              @RequestParam int quantity,
+                              @RequestParam String unit,
+                              @RequestParam int reorderLevel) {
+
+        InventoryItem item = new InventoryItem();
+        item.setName(name);
+        item.setQuantity(quantity);
+        item.setUnit(unit);
+        item.setReorderLevel(reorderLevel);
+
+        inventoryService.addItem(item);
+
+        return "redirect:/inventory";
+    }
+
+    // ✅ Restock ingredient
+    @PostMapping("/inventory/restock")
+    public String restock(@RequestParam Long id,
+                          @RequestParam int amount) {
+
+        inventoryService.restockItem(id, amount);
+
+        return "redirect:/inventory";
+    }
+
+    // ✅ Order from distributor (modal)
+    @PostMapping("/inventory/order")
+    public String orderItem(@RequestParam Long id,
+                            @RequestParam int amount) {
+
+        inventoryService.orderFromDistributor(id, amount);
+
+        return "redirect:/inventory";
+    }
+
+    // ✅ Login page
+    @GetMapping("/login")
+    public String login() {
+        return "login";
+    }
+}

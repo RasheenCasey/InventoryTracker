@@ -1,0 +1,48 @@
+package com.Inventory.productsheet.repository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.Inventory.productsheet.model.InventoryItem;
+import com.Inventory.productsheet.service.InventoryService;
+
+import java.util.List;
+
+@Service
+public class InventoryServiceImpl implements InventoryService {
+
+    @Autowired
+    private InventoryRepository inventoryRepository;
+
+    @Override
+    public List<InventoryItem> getAllItems() {
+        return inventoryRepository.findAll();
+    }
+
+    @Override
+    public void addItem(InventoryItem item) {
+        inventoryRepository.save(item);
+    }
+
+    @Override
+    public void restockItem(Long id, int amount) {
+        InventoryItem item = inventoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        item.setQuantity(item.getQuantity() + amount);
+        inventoryRepository.save(item);
+    }
+
+    @Override
+    public void orderFromDistributor(Long id, int amount) {
+        InventoryItem item = inventoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        // 👉 Simulate ordering (for now just adds stock)
+        item.setQuantity(item.getQuantity() + amount);
+
+        inventoryRepository.save(item);
+    }
+    
+    
+}

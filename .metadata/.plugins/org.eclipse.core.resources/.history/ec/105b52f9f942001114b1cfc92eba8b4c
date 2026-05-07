@@ -1,0 +1,5 @@
+package com.Inventory.productsheet.model;
+
+public class InventoryOrder {
+
+}

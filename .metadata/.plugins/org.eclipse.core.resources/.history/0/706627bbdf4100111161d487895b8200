@@ -1,0 +1,31 @@
+package com.Inventory.productsheet.controller;
+
+import com.Inventory.productsheet.model.Ingredient;
+import com.Inventory.productsheet.repository.IngredientRepository;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+
+@Controller
+public class InventoryActionController {
+
+    private final IngredientRepository ingredientRepository;
+
+    public InventoryActionController(IngredientRepository ingredientRepository) {
+        this.ingredientRepository = ingredientRepository;
+    }
+
+    // ✅ UI-only endpoint (NO overlap with REST)
+    @PostMapping("/inventory/restock/{id}")
+    public String restockFromUI(
+            @PathVariable Long id,
+            @RequestParam int amount
+    ) {
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow();
+
+        ingredient.setQuantity(ingredient.getQuantity() + amount);
+        ingredientRepository.save(ingredient);
+
+        return "redirect:/inventory";
+    }
+}

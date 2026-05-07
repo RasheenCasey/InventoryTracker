@@ -1,0 +1,153 @@
+package com.Inventory.productsheet.service;
+
+import com.Inventory.productsheet.model.Sale;
+import com.Inventory.productsheet.repository.SaleRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Service
+public class SalesServiceImpl implements SalesService {
+
+    private final SaleRepository saleRepository;
+
+    public SalesServiceImpl(SaleRepository saleRepository) {
+        this.saleRepository = saleRepository;
+    }
+
+    @Override
+    @Transactional
+    public void recordSale(Sale sale) {
+        saleRepository.save(sale);
+    }
+
+    @Override
+    public List<Sale> getSalesByDateRange(LocalDateTime start, LocalDateTime end) {
+        return saleRepository.findBySaleTimeBetween(start, end);
+    }
+
+    @Override
+    public BigDecimal getTotalRevenue(LocalDateTime start, LocalDateTime end) {
+        BigDecimal revenue = saleRepository.getTotalRevenueBetween(start, end);
+        return revenue != null ? revenue : BigDecimal.ZERO;
+    }
+
+    @Override
+    public List<Object[]> getTopSellingItems(LocalDateTime start, LocalDateTime end, int limit) {
+        List<Object[]> results = saleRepository.getTopSellingItems(start, end);
+        return results.stream().limit(limit).collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, BigDecimal> getSalesByPaymentMethod(LocalDateTime start, LocalDateTime end) {
+        List<Object[]> results = saleRepository.getSalesByPaymentMethod(start, end);
+        Map<String, BigDecimal> paymentMap = new HashMap<>();
+        
+        for (Object[] result : results) {
+            String method = (String) result[0];
+            Long count = (Long) result[1];
+            paymentMap.put(method, BigDecimal.valueOf(count));
+        }
+        
+        return paymentMap;
+    }
+
+    @Override
+    public Map<String, BigDecimal> getDailySalesSummary(LocalDateTime start, LocalDateTime end) {
+        List<Object[]> results = saleRepository.getDailySalesSummary(start, end);
+        Map<String, BigDecimal> dailyMap = new LinkedHashMap<>();
+        
+        for (Object[] result : results) {
+            String date = result[0].toString();
+            BigDecimal revenue = (BigDecimal) result[1];
+            dailyMap.put(date, revenue);
+        }
+        
+        return dailyMap;
+    }
+
+    @Override
+    public BigDecimal forecastWeeklyRevenue(LocalDateTime baseDate) {
+        // Get last 4 weeks of data for forecasting
+        LocalDateTime fourWeeksAgo = baseDate.minusWeeks(4);
+        LocalDateTime now = baseDate;
+        
+        BigDecimal totalRevenue = getTotalRevenue(fourWeeksAgo, now);
+        BigDecimal weeklyAverage = totalRevenue.divide(BigDecimal.valueOf(4), 2, RoundingMode.HALF_UP);
+        
+        // Apply trend adjustment (simple linear projection)
+        return weeklyAverage.multiply(BigDecimal.valueOf(1.05)); // 5% growth assumption
+    }
+
+    @Override
+    public Map<String, Integer> forecastIngredientUsage(LocalDateTime baseDate, int daysAhead) {
+        Map<String, Integer> forecast = new HashMap<>();
+        
+        // Get last 7 days of sales for pattern analysis
+        LocalDateTime weekAgo = baseDate.minusDays(7);
+        List<Sale> recentSales = getSalesByDateRange(weekAgo, baseDate);
+        
+        // Calculate average daily usage per ingredient
+        Map<String, Double> dailyUsage = new HashMap<>();
+        for (Sale sale : recentSales) {
+            if (sale.getIngredientsUsed() != null) {
+                for (var ingredient : sale.getIngredientsUsed()) {
+                    dailyUsage.merge(ingredient.getName(), 
+                        sale.getQuantity() * 1.0 / 7.0, Double::sum);
+                }
+            }
+        }
+        
+        // Project usage for future days
+        for (Map.Entry<String, Double> entry : dailyUsage.entrySet()) {
+            forecast.put(entry.getKey(), (int) Math.ceil(entry.getValue() * daysAhead));
+        }
+        
+        return forecast;
+    }
+
+    @Override
+    public List<String> getPeakSalesHours(LocalDateTime start, LocalDateTime end) {
+        List<Sale> sales = getSalesByDateRange(start, end);
+        Map<Integer, Integer> hourlySales = new HashMap<>();
+        
+        for (Sale sale : sales) {
+            int hour = sale.getSaleTime().getHour();
+            hourlySales.merge(hour, sale.getQuantity(), Integer::sum);
+        }
+        
+        return hourlySales.entrySet().stream()
+            .sorted(Map.Entry.<Integer, Integer>comparingByValue().reversed())
+            .limit(3)
+            .map(entry -> entry.getKey() + ":00 - " + (entry.getKey() + 1) + ":00")
+            .collect(Collectors.toList());
+    }
+
+    @Override
+    public Map<String, BigDecimal> getMenuItemPerformance(LocalDateTime start, LocalDateTime end) {
+        List<Sale> sales = getSalesByDateRange(start, end);
+        Map<String, BigDecimal> performance = new HashMap<>();
+        
+        for (Sale sale : sales) {
+            performance.merge(sale.getMenuItemName(), 
+                sale.getTotalRevenue(), BigDecimal::add);
+        }
+        
+        return performance;
+    }
+
+    @Override
+    public List<String> getLowPerformingMenuItems(LocalDateTime start, LocalDateTime end, BigDecimal threshold) {
+        Map<String, BigDecimal> performance = getMenuItemPerformance(start, end);
+        
+        return performance.entrySet().stream()
+            .filter(entry -> entry.getValue().compareTo(threshold) < 0)
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
+    }
+}

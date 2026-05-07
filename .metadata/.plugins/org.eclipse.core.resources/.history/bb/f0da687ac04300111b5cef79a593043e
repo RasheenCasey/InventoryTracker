@@ -1,0 +1,93 @@
+package com.Inventory.productsheet.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
+import com.Inventory.productsheet.model.InventoryItem;
+import com.Inventory.productsheet.model.InventoryOrder;
+import com.Inventory.productsheet.repository.InventoryRepository;
+import com.Inventory.productsheet.repository.InventoryOrderRepository;
+
+@Service
+public class InventoryServiceImpl implements InventoryService {
+
+    private final InventoryRepository inventoryRepository;
+    private final InventoryOrderRepository orderRepository;
+
+    // ✅ Constructor injection (clean)
+    public InventoryServiceImpl(InventoryRepository inventoryRepository,
+                                InventoryOrderRepository orderRepository) {
+        this.inventoryRepository = inventoryRepository;
+        this.orderRepository = orderRepository;
+    }
+
+    @Override
+    public List<InventoryItem> getAllItems() {
+        return inventoryRepository.findAll();
+    }
+
+    @Override
+    public void addItem(InventoryItem item) {
+        inventoryRepository.save(item);
+    }
+
+    @Override
+    public void restockItem(Long id, int amount) {
+        InventoryItem item = inventoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        item.setQuantity(item.getQuantity() + amount);
+        inventoryRepository.save(item);
+    }
+
+    @Override
+    public void orderFromDistributor(Long id, int amount) {
+
+        InventoryItem item = inventoryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        InventoryOrder order = new InventoryOrder();
+
+        // ✅ DO NOT SET ID — database handles it
+
+        order.setItemName(item.getName());
+        order.setItemId(item.getId()); // 🔥 critical fix
+        order.setQuantity(amount);
+        order.setStatus("PENDING");
+        order.setOrderDate(LocalDateTime.now());
+
+        orderRepository.save(order);
+    }
+
+    @Override
+    public List<InventoryOrder> getAllOrders() {
+        return orderRepository.findAll();
+    }
+
+    @Override
+    public void markOrderDelivered(Long orderId) {
+
+        InventoryOrder order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (!"DELIVERED".equals(order.getStatus())) {
+
+            // ✅ Use itemId (NOT order id)
+            InventoryItem item = inventoryRepository.findById(order.getItemId())
+                    .orElseThrow(() -> new RuntimeException("Item not found"));
+
+            item.setQuantity(item.getQuantity() + order.getQuantity());
+            inventoryRepository.save(item);
+
+            order.setStatus("DELIVERED");
+            orderRepository.save(order);
+        }
+    }
+    public void updateStock(Long id, int quantity) {
+        InventoryItem item = inventoryRepository.findById(id).orElseThrow();
+        item.setQuantity(quantity);
+        inventoryRepository.save(item);
+    }
+}

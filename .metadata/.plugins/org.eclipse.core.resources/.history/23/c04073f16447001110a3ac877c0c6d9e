@@ -1,0 +1,237 @@
+package com.Inventory.productsheet.service;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.Inventory.productsheet.model.InventoryItem;
+import com.Inventory.productsheet.model.InventoryOrder;
+import com.Inventory.productsheet.repository.InventoryRepository;
+import com.Inventory.productsheet.repository.InventoryOrderRepository;
+
+@Service
+public class InventoryServiceImpl implements InventoryService {
+
+    private final InventoryRepository inventoryRepository;
+    private final InventoryOrderRepository orderRepository;
+
+    public InventoryServiceImpl(InventoryRepository inventoryRepository,
+                                InventoryOrderRepository orderRepository) {
+        this.inventoryRepository = inventoryRepository;
+        this.orderRepository = orderRepository;
+    }
+
+    // ---------------- ITEMS ----------------
+
+    @Override
+    public List<InventoryItem> getAllItems() {
+        try {
+            return inventoryRepository.findByDeletedFalse();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to retrieve inventory items", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void addItem(InventoryItem item) {
+        try {
+            if (item == null) {
+                throw new IllegalArgumentException("Item cannot be null");
+            }
+            if (item.getName() == null || item.getName().trim().isEmpty()) {
+                throw new IllegalArgumentException("Item name cannot be empty");
+            }
+            item.setDeleted(false);
+            inventoryRepository.save(item);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to add inventory item", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void updateStock(Long id, int quantity) {
+        try {
+            if (id == null) {
+                throw new IllegalArgumentException("Item ID cannot be null");
+            }
+            if (quantity < 0) {
+                throw new IllegalArgumentException("Quantity cannot be negative");
+            }
+
+            InventoryItem item = inventoryRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Item not found with ID: " + id));
+
+            item.setQuantity(quantity);
+            inventoryRepository.save(item);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to update stock for item ID: " + id, e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void softDeleteItem(Long id) {
+        try {
+            if (id == null) {
+                throw new IllegalArgumentException("Item ID cannot be null");
+            }
+
+            InventoryItem item = inventoryRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Item not found with ID: " + id));
+
+            item.setDeleted(true);
+            inventoryRepository.save(item);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to soft delete item with ID: " + id, e);
+        }
+    }
+
+    // ---------------- ORDERS ----------------
+
+    @Override
+    public List<InventoryOrder> getAllOrders() {
+        try {
+            return orderRepository.findAll();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to retrieve orders", e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void orderFromDistributor(Long id, int amount) {
+        try {
+            if (id == null) {
+                throw new IllegalArgumentException("Item ID cannot be null");
+            }
+            if (amount <= 0) {
+                throw new IllegalArgumentException("Order amount must be positive");
+            }
+
+            InventoryItem item = inventoryRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Item not found with ID: " + id));
+
+            if (item.isDeleted()) {
+                throw new RuntimeException("Cannot place order for deleted item");
+            }
+
+            InventoryOrder order = new InventoryOrder();
+            order.setItemId(item.getId());
+            order.setItemName(item.getName());
+            order.setQuantity(amount);
+            order.setStatus("PENDING");
+            order.setOrderDate(LocalDateTime.now());
+
+            orderRepository.save(order);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to place order for item ID: " + id, e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void markOrderDelivered(Long orderId) {
+        try {
+            if (orderId == null) {
+                throw new IllegalArgumentException("Order ID cannot be null");
+            }
+
+            InventoryOrder order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+            if (!"DELIVERED".equals(order.getStatus())) {
+                InventoryItem item = inventoryRepository.findById(order.getItemId())
+                        .orElseThrow(() -> new RuntimeException("Item not found with ID: " + order.getItemId()));
+
+                if (item.isDeleted()) {
+                    throw new RuntimeException("Cannot deliver order for deleted item");
+                }
+
+                // Update item quantity
+                item.setQuantity(item.getQuantity() + order.getQuantity());
+                inventoryRepository.save(item);
+
+                // Update order status
+                order.setStatus("DELIVERED");
+                order.setDeliveryDate(LocalDateTime.now());
+                orderRepository.save(order);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to mark order as delivered: " + orderId, e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteOrder(Long id) {
+        try {
+            if (id == null) {
+                throw new IllegalArgumentException("Order ID cannot be null");
+            }
+            
+            if (!orderRepository.existsById(id)) {
+                throw new RuntimeException("Order not found with ID: " + id);
+            }
+            
+            orderRepository.deleteById(id);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete order with ID: " + id, e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void restockItem(Long id, int amount) {
+        try {
+            if (id == null) {
+                throw new IllegalArgumentException("Item ID cannot be null");
+            }
+            if (amount <= 0) {
+                throw new IllegalArgumentException("Restock amount must be positive");
+            }
+
+            InventoryItem item = inventoryRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Item not found with ID: " + id));
+
+            if (item.isDeleted()) {
+                throw new RuntimeException("Cannot restock deleted item");
+            }
+
+            item.setQuantity(item.getQuantity() + amount);
+            inventoryRepository.save(item);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to restock item with ID: " + id, e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void deleteItem(Long id) {
+        try {
+            if (id == null) {
+                throw new IllegalArgumentException("Item ID cannot be null");
+            }
+
+            // Check if item exists
+            if (!inventoryRepository.existsById(id)) {
+                throw new RuntimeException("Item not found with ID: " + id);
+            }
+
+            // Check if there are any pending orders for this item
+            List<InventoryOrder> pendingOrders = orderRepository.findByItemIdAndStatus(id, "PENDING");
+            if (!pendingOrders.isEmpty()) {
+                throw new RuntimeException("Cannot delete item with pending orders");
+            }
+
+            // Perform hard delete
+            inventoryRepository.deleteById(id);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to delete item with ID: " + id, e);
+        }
+    }
+}

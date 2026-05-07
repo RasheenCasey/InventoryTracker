@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Food Truck Inventory</title>
+<link rel="stylesheet" th:href="@{/css/styles.css}" />
+</head>
+
+<body>
+
+	<!-- Navigation Bar -->
+	<nav class="navbar">
+		<a th:href="@{/}" class="navbar-brand">🍔 Food Truck Inventory</a>
+		<div class="nav-links">
+			<a th:href="@{/}">Home</a>
+			<a th:href="@{/inventory}">Inventory</a>
+			<a th:href="@{/ai/chat}">AI Assistant</a>
+		</div>
+	</nav>
+
+	<div class="page-wrapper">
+		<!-- Calendar Sidebar -->
+		<div class="sidebar-calendar">
+			<div class="calendar-container">
+				<div class="calendar-header">
+					<button onclick="previousMonth()">&lt;</button>
+					<h3 id="calendarMonth">Month Year</h3>
+					<button onclick="nextMonth()">&gt;</button>
+				</div>
+				<div class="calendar-grid" id="calendarGrid">
+					<div class="calendar-day-header">Su</div>
+					<div class="calendar-day-header">Mo</div>
+					<div class="calendar-day-header">Tu</div>
+					<div class="calendar-day-header">We</div>
+					<div class="calendar-day-header">Th</div>
+					<div class="calendar-day-header">Fr</div>
+					<div class="calendar-day-header">Sa</div>
+				</div>
+			</div>
+			<!-- Distributor Links Section -->
+			<div class="distributor-links">
+				<h4>🚚 Food Distributors</h4>
+				<ul>
+					<li><a href="https://www.sysco.com" target="_blank" rel="noopener">Sysco</a></li>
+					<li><a href="https://www.usfoods.com" target="_blank" rel="noopener">US Foods</a></li>
+					<li><a href="https://www.gfs.com" target="_blank" rel="noopener">Gordon Food Service</a></li>
+					<li><a href="https://www.restaurantdepot.com" target="_blank" rel="noopener">Restaurant Depot</a></li>
+					<li><a href="https://www.mclanefoodservice.com" target="_blank" rel="noopener">McLane Foodservice</a></li>
+				</ul>
+			</div>
+		</div>
+
+		<!-- Main Inventory Content -->
+		<div class="main-content">
+			<div class="container">
+				<div class="page-header">
+					<img th:src="@{/images/logo.png}" alt="Food Truck Inventory" class="inventory-logo" />
+					<div class="header-actions">
+						<button type="button" onclick="toggleQRScanner()" class="btn btn-qr">📷 Scan QR</button>
+						<button type="button" onclick="openAddItemModal()" class="btn btn-add">➕ Add Item</button>
+					</div>
+				</div>
+			</div>
+
+			<div class="stats-container">
+				<div class="stat-card card-default">
+					<h3>Total Items</h3>
+					<h1 th:text="${totalItems}">0</h1>
+				</div>
+				<div class="stat-card card-warning">
+					<h3>Low Stock Items</h3>
+					<h1 th:text="${lowStockCount}">0</h1>
+				</div>
+				<div class="stat-card card-success">
+					<h3>Total Inventory Value</h3>
+					<h1>$<span th:text="${totalInventoryValue}">0.00</span></h1>
+				</div>
+				<div class="stat-card card-info">
+					<h3>Avg Unit Cost</h3>
+					<h1>$<span th:text="${avgUnitCost}">0.00</span></h1>
+				</div>
+			</div>
+
+		<h2 class="section-title">Inventory</h2>
+
+		<div class="table-container">
+		<table class="data-table">
+			<tr>
+				<th>Name</th>
+				<th>Update Qty</th>
+				<th>Unit</th>
+				<th>Unit Price</th>
+				<th>Total Value</th>
+				<th>Reorder Level</th>
+				<th>Status</th>
+				<th>Order</th>
+				<th style="min-width: 140px;">Action</th>
+			</tr>
+
+			<!-- ONLY ACTIVE ITEMS -->
+			<tr th:each="inventoryItem : ${inventoryItems}"
+				th:if="${inventoryItem != null and inventoryItem.deleted == false}">
+
+				<td th:text="${inventoryItem.name}"></td>
+
+				<!-- UPDATE STOCK -->
+				<td>
+					<form th:action="@{/inventory/update}" method="post" class="update-form">
+
+						<input type="hidden" name="id" th:value="${inventoryItem.id}" />
+
+						<input type="number" name="quantity"
+							th:value="${inventoryItem.quantity}" min="0" class="qty-input" />
+
+						<input type="hidden" th:name="${_csrf.parameterName}"
+							th:value="${_csrf.token}" />
+
+						<button type="submit">Save</button>
+					</form>
+				</td>
+
+				<td th:text="${inventoryItem.unit}"></td>
+				<td th:text="${'$' + #numbers.formatDecimal(inventoryItem.price, 1, 2)}">$0.00</td>
+				<td th:text="${'$' + #numbers.formatDecimal(inventoryItem.price * inventoryItem.quantity, 1, 2)}">$0.00</td>
+				<td th:text="${inventoryItem.reorderLevel}"></td>
+
+				<!-- STATUS -->
+				<td><span
+					th:if="${inventoryItem.quantity <= inventoryItem.reorderLevel}"
+					class="low-stock">⚠ Low</span> <span
+					th:unless="${inventoryItem.quantity <= inventoryItem.reorderLevel}"
+					class="ok-status">OK</span></td>
+
+				<!-- ORDER -->
+				<td>
+					<button class="order-btn"
+						th:data-id="${inventoryItem.id}"
+						th:data-name="${inventoryItem.name}"
+						onclick="openOrderModal(this)">Order</button>
+				</td>
+
+				<!-- ACTIONS -->
+				<td class="action-cell">
+					<button type="button" class="btn-edit"
+						th:data-id="${inventoryItem.id}"
+						th:data-name="${inventoryItem.name}"
+						th:data-qty="${inventoryItem.quantity}"
+						th:data-unit="${inventoryItem.unit}"
+						th:data-price="${inventoryItem.price}"
+						th:data-reorder="${inventoryItem.reorderLevel}"
+						onclick="openEditModal(this)">✏️ Edit</button>
+					<button type="button" class="btn-qr-generate"
+						th:data-name="${inventoryItem.name}"
+						th:data-qty="${inventoryItem.quantity}"
+						th:data-unit="${inventoryItem.unit}"
+						th:data-price="${inventoryItem.price}"
+						th:data-reorder="${inventoryItem.reorderLevel}"
+						onclick="generateQRCode(this)">📱 QR</button>
+					<form th:action="@{/inventory/delete/{id}(id=${inventoryItem.id})}"
+						method="post" onsubmit="return confirm('Delete this item?');" class="inline-form">
+
+						<input type="hidden" th:name="${_csrf.parameterName}"
+							th:value="${_csrf.token}" />
+
+						<button class="btn-delete">Delete</button>
+					</form>
+				</td>
+
+			</tr>
+
+			<!-- FIX: empty state row when no active items exist -->
+			<tr th:if="${#lists.isEmpty(inventoryItems)}">
+				<td colspan="9" class="empty-state">No inventory items yet. Add
+					one above.</td>
+			</tr>
+		</table>
+		</div>
+
+		<!-- ORDERS -->
+		<h2 class="section-title">Orders</h2>
+		<div class="table-container">
+		<table class="data-table">
+			<tr>
+				<th>Item</th>
+				<th>Quantity</th>
+				<th>Status</th>
+				<th>Actions</th>
+			</tr>
+
+			<tr th:each="order : ${orders != null ? orders : {}}"
+				th:if="${order != null}">
+
+				<td th:text="${order.itemName}"></td>
+				<td th:text="${order.quantity}"></td>
+
+				<td><span
+					th:if="${order.status != null and order.status == 'PENDING'}"
+					class="status-pending">Pending</span> <span
+					th:if="${order.status != null and order.status == 'DELIVERED'}"
+					class="status-delivered">Delivered</span> <!-- FIX: fallback for any unexpected/unknown status value -->
+					<span
+					th:if="${order.status != null
+						and order.status != 'PENDING'
+						and order.status != 'DELIVERED'}"
+					th:text="${order.status}">Unknown</span></td>
+
+				<td class="order-actions">
+					<!-- DELIVER -->
+					<form
+						th:if="${order.status != null and order.status == 'PENDING' and order.id != null}"
+						th:action="@{/orders/{id}/deliver(id=${order.id})}" method="post" class="inline-form">
+
+						<input type="hidden" th:name="${_csrf.parameterName}"
+							th:value="${_csrf.token}" />
+
+						<button type="submit" class="btn-deliver">Deliver</button>
+					</form> <!-- DELETE -->
+					<form th:if="${order.id != null}"
+						th:action="@{/orders/{id}/delete(id=${order.id})}" method="post"
+						onsubmit="return confirm('Delete this order?');" class="inline-form">
+
+						<input type="hidden" th:name="${_csrf.parameterName}"
+							th:value="${_csrf.token}" />
+
+						<button type="submit" class="btn-delete-order">Delete</button>
+					</form>
+				</td>
+			</tr>
+
+			<!-- FIX: empty state when there are no orders -->
+			<tr th:if="${orders == null or #lists.isEmpty(orders)}">
+				<td colspan="4" class="empty-state">No orders placed yet.</td>
+			</tr>
+		</table>
+		</div>
+
+		</div>
+		<!-- Close main-content -->
+		</div>
+
+		<!-- Active Menu Promotions Sidebar -->
+		<div class="sidebar-sales">
+			<div class="sales-container">
+				<h3>📋 Menu Specials</h3>
+				<div id="menuSpecialsList">
+					<!-- Menu specials will be rendered here by JavaScript -->
+				</div>
+				<button class="btn-add-sale" onclick="openMenuModal()">+ Add Menu Special</button>
+			</div>
+		</div>
+	<!-- Close page-wrapper -->
+	</div>
+
+	<!-- MODAL — FIX: clicking backdrop closes modal -->
+	<div id="orderModal" class="modal" onclick="closeOrderModal()">
+		<!-- FIX: stopPropagation prevents backdrop click from firing inside the box -->
+		<div class="modal-content" onclick="event.stopPropagation()">
+			<span class="close" onclick="closeOrderModal()">×</span>
+			<h3>Order Item</h3>
+
+			<form id="orderForm" method="post" th:action="@{/inventory/order}" onsubmit="return handleOrderSubmit(event);">
+				<p id="modalItemName"></p>
+
+				<input type="hidden" id="modalItemId" name="id" />
+				
+				<label for="distributorSelect" style="display: block; margin-bottom: 5px; color: #aaa; font-size: 0.9rem;">Select Distributor:</label>
+				<select id="distributorSelect" name="distributor" required style="width: 100%; padding: 10px; margin-bottom: 15px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;">
+					<option value="">Choose a distributor...</option>
+					<option value="https://www.sysco.com">Sysco</option>
+					<option value="https://www.usfoods.com">US Foods</option>
+					<option value="https://www.gfs.com">Gordon Food Service</option>
+					<option value="https://www.restaurantdepot.com">Restaurant Depot</option>
+					<option value="https://www.mclanefoodservice.com">McLane Foodservice</option>
+				</select>
+				
+				<input type="number" name="amount" min="1" placeholder="Quantity" required style="width: 100%; padding: 10px; margin-bottom: 15px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				
+				<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+				<button type="submit" class="btn-order-submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Place Order</button>
+			</form>
+		</div>
+	</div>
+
+	<!-- Calendar Comment Modal -->
+	<div id="calendarCommentModal" class="calendar-modal" onclick="closeCommentModal()">
+		<div class="calendar-modal-content" onclick="event.stopPropagation()">
+			<div class="calendar-modal-header">
+				<h3>Add Comment - <span id="commentDate"></span></h3>
+				<span class="calendar-close" onclick="closeCommentModal()">&times;</span>
+			</div>
+			<div id="existingCommentSection" class="existing-comment" style="display: none;">
+				<strong>Current Comment:</strong>
+				<p id="existingCommentText"></p>
+			</div>
+			<textarea id="commentInput" class="comment-textarea" placeholder="Enter your comment for this date..."></textarea>
+			<div class="comment-actions">
+				<button class="btn-save" onclick="saveComment()">Save</button>
+				<button class="btn-delete" id="deleteBtn" onclick="deleteComment()" style="display: none;">Delete</button>
+				<button class="btn-cancel" onclick="closeCommentModal()">Cancel</button>
+			</div>
+		</div>
+	</div>
+
+	<!-- Add Item Modal -->
+	<div id="addItemModal" class="modal" onclick="closeAddItemModal()">
+		<div class="modal-content" onclick="event.stopPropagation()">
+			<span class="close" onclick="closeAddItemModal()">×</span>
+			<h3>Add New Item</h3>
+
+			<form th:action="@{/inventory/add}" method="post" id="addItemFormModal">
+				<input type="text" name="name" id="modalItemName" placeholder="Item name" required style="width: 100%; padding: 10px; margin-bottom: 12px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				<input type="number" name="quantity" id="modalItemQty" min="1" placeholder="Quantity" required style="width: 100%; padding: 10px; margin-bottom: 12px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				<input type="text" name="unit" id="modalItemUnit" placeholder="Unit (e.g., lbs, each, case)" required style="width: 100%; padding: 10px; margin-bottom: 12px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				<input type="number" name="reorderLevel" id="modalItemReorder" min="0" placeholder="Reorder level" required style="width: 100%; padding: 10px; margin-bottom: 12px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				<input type="number" name="price" id="modalItemPrice" min="0" step="0.01" placeholder="Unit price ($)" required style="width: 100%; padding: 10px; margin-bottom: 15px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+				<button type="submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Add Item</button>
+			</form>
+		</div>
+	</div>
+
+	<!-- Edit Item Modal -->
+	<div id="editItemModal" class="modal" onclick="closeEditModal()">
+		<div class="modal-content" onclick="event.stopPropagation()">
+			<span class="close" onclick="closeEditModal()">×</span>
+			<h3>Edit Item</h3>
+
+			<form th:action="@{/inventory/edit}" method="post" id="editItemFormModal">
+				<input type="hidden" name="id" id="editItemId" />
+				<input type="text" name="name" id="editItemName" placeholder="Item name" required style="width: 100%; padding: 10px; margin-bottom: 12px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				<input type="number" name="quantity" id="editItemQty" min="0" placeholder="Quantity" required style="width: 100%; padding: 10px; margin-bottom: 12px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				<input type="text" name="unit" id="editItemUnit" placeholder="Unit (e.g., lbs, each, case)" required style="width: 100%; padding: 10px; margin-bottom: 12px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				<input type="number" name="reorderLevel" id="editItemReorder" min="0" placeholder="Reorder level" required style="width: 100%; padding: 10px; margin-bottom: 12px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				<input type="number" name="price" id="editItemPrice" min="0" step="0.01" placeholder="Unit price ($)" required style="width: 100%; padding: 10px; margin-bottom: 15px; background: #2d2d44; color: #fff; border: 1px solid #3d3d5c; border-radius: 6px;" />
+				<input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+				<button type="submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Save Changes</button>
+			</form>
+		</div>
+	</div>
+
+	<script>
+		function openAddItemModal() {
+			document.getElementById("addItemModal").style.display = "block";
+		}
+
+		function closeAddItemModal() {
+			document.getElementById("addItemModal").style.display = "none";
+			document.getElementById("addItemFormModal").reset();
+		}
+
+		function openEditModal(button) {
+			const itemId = button.dataset.id;
+			const itemName = button.dataset.name;
+			const itemQty = button.dataset.qty;
+			const itemUnit = button.dataset.unit;
+			const itemPrice = button.dataset.price;
+			const itemReorder = button.dataset.reorder;
+
+			document.getElementById("editItemId").value = itemId;
+			document.getElementById("editItemName").value = itemName;
+			document.getElementById("editItemQty").value = itemQty;
+			document.getElementById("editItemUnit").value = itemUnit;
+			document.getElementById("editItemPrice").value = itemPrice;
+			document.getElementById("editItemReorder").value = itemReorder;
+
+			document.getElementById("editItemModal").style.display = "block";
+		}
+
+		function closeEditModal() {
+			document.getElementById("editItemModal").style.display = "none";
+		}
+
+		function openOrderModal(button) {
+			const itemId = button.dataset.id;
+			const itemName = button.dataset.name;
+
+			document.getElementById("modalItemId").value = itemId;
+			document.getElementById("modalItemName").innerText = "Ordering: "
+					+ itemName;
+
+			document.getElementById("orderModal").style.display = "block";
+		}
+
+		function closeOrderModal() {
+			document.getElementById("orderModal").style.display = "none";
+			// FIX: reset the form so stale quantity doesn't persist between opens
+			document.getElementById("orderForm").reset();
+		}
+
+		function handleOrderSubmit(event) {
+			const distributorUrl = document.getElementById("distributorSelect").value;
+			const itemName = document.getElementById("modalItemName").innerText.replace("Ordering: ", "");
+			const quantity = document.querySelector("#orderForm input[name='amount']").value;
+			
+			if (distributorUrl) {
+				// Open distributor website in new window
+				const orderWindow = window.open(distributorUrl, '_blank', 'width=1200,height=800');
+				
+				// Show confirmation message
+				setTimeout(() => {
+					alert(`Ordering ${quantity} of ${itemName} from distributor.\n\nThe distributor website has opened in a new window. Please place your order there, then come back to mark it as delivered when it arrives.`);
+				}, 500);
+			}
+			
+			// Allow form to submit normally to save the order in your system
+			return true;
+		}
+
+		// FIX: close modal on Escape key
+		document.addEventListener("keydown", function(e) {
+			if (e.key === "Escape") {
+				closeOrderModal();
+			}
+		});
+	</script>
+
+	<!-- QR Scanner Container -->
+	<div id="qrScannerModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center;">
+		<div style="background: white; padding: 20px; border-radius: 10px; text-align: center; max-width: 400px;">
+			<h3 style="color: #333; margin-top: 0;">📷 Scan QR Code</h3>
+			<div id="qr-reader" style="width: 300px; margin: 0 auto;"></div>
+			<p style="color: #666; font-size: 14px;">Point camera at a QR code</p>
+			<button onclick="closeQRScanner()" style="background: #ff6b6b; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Close</button>
+		</div>
+	</div>
+
+	<!-- Menu Special Modal -->
+	<div id="menuSpecialModal" class="menu-modal" onclick="closeMenuModal()">
+		<div class="menu-modal-content" onclick="event.stopPropagation()">
+			<div class="menu-modal-header">
+				<h3 id="menuModalTitle">Add Menu Special</h3>
+				<span class="menu-close" onclick="closeMenuModal()">&times;</span>
+			</div>
+			<form class="menu-form" id="menuForm" onsubmit="saveMenuSpecial(event)">
+				<input type="text" id="menuName" placeholder="Item Name (e.g., Double Cheeseburger)" required />
+				<select id="menuType" required>
+					<option value="">Select Type...</option>
+					<option value="SPECIAL">SPECIAL</option>
+					<option value="COMBO">COMBO</option>
+					<option value="DAILY">DAILY</option>
+					<option value="WEEKLY">WEEKLY</option>
+					<option value="BESTSELLER">BESTSELLER</option>
+					<option value="NEW">NEW</option>
+					<option value="LIMITED">LIMITED</option>
+					<option value="SEASONAL">SEASONAL</option>
+				</select>
+				<textarea id="menuDescription" placeholder="Description (e.g., 2 patties, extra cheese)" required></textarea>
+				<input type="text" id="menuIngredients" placeholder="Ingredients (e.g., Beef, Cheese, Buns)" required />
+				<div class="menu-form-actions">
+					<button type="submit" class="btn-menu-save">Save</button>
+					<button type="button" class="btn-menu-cancel" onclick="closeMenuModal()">Cancel</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- QR Code Generator Modal -->
+	<div id="qrGeneratorModal" class="qr-modal" onclick="closeQRGeneratorModal()">
+		<div class="qr-modal-content" onclick="event.stopPropagation()">
+			<div class="qr-modal-header">
+				<h3>📱 Item QR Code</h3>
+				<span class="qr-close" onclick="closeQRGeneratorModal()">&times;</span>
+			</div>
+			<div class="qr-modal-body">
+				<p id="qrItemName" style="color: #aaa; margin-bottom: 15px; text-align: center;"></p>
+				<div id="qrCodeContainer" style="text-align: center; margin: 20px 0;">
+					<img id="qrCodeImage" src="" alt="QR Code" style="max-width: 250px; border-radius: 10px;">
+				</div>
+				<p style="color: #888; font-size: 0.85rem; text-align: center; margin-bottom: 15px;">
+					Scan this code to auto-fill the add item form
+				</p>
+				<div class="qr-actions">
+					<button onclick="printQRCode()" class="btn-print">🖨️ Print</button>
+					<button onclick="closeQRGeneratorModal()" class="btn-close-qr">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- QR Scanner Library -->
+	<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+	<script>
+		let html5QrCode = null;
+		let isScanning = false;
+
+		function toggleQRScanner() {
+			const modal = document.getElementById('qrScannerModal');
+			modal.style.display = 'flex';
+			startQRScanner();
+		}
+
+		function closeQRScanner() {
+			const modal = document.getElementById('qrScannerModal');
+			modal.style.display = 'none';
+			stopQRScanner();
+		}
+
+		function startQRScanner() {
+			if (isScanning) return;
+
+			html5QrCode = new Html5Qrcode("qr-reader");
+			const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+			html5QrCode.start(
+				{ facingMode: "environment" },
+				config,
+				(decodedText, decodedResult) => {
+					handleQRScan(decodedText);
+				},
+				(errorMessage) => {
+					// Ignore continuous errors
+				}
+			).then(() => {
+				isScanning = true;
+			}).catch(err => {
+				console.error("QR Scanner error:", err);
+				alert("Error starting camera. Please allow camera permissions.");
+			});
+		}
+
+		function stopQRScanner() {
+			if (html5QrCode && isScanning) {
+				html5QrCode.stop().then(() => {
+					isScanning = false;
+					html5QrCode.clear();
+				}).catch(err => {
+					console.error("Error stopping scanner:", err);
+				});
+			}
+		}
+
+		function handleQRScan(qrData) {
+			try {
+				console.log("QR Data received:", qrData);
+				
+				// Check if qrData is valid
+				if (!qrData || typeof qrData !== 'string') {
+					console.error("Invalid QR data:", qrData);
+					alert("Invalid QR code data received. Please try scanning again.");
+					return;
+				}
+				
+				// Decode if URL encoded
+				let decodedData = qrData;
+				try {
+					decodedData = decodeURIComponent(qrData);
+				} catch (e) {
+					// If decoding fails, use original
+					console.log("Decode failed, using original");
+				}
+				console.log("Decoded data:", decodedData);
+				
+				// Expected format: ITEM:name|qty|unit|price|reorder (case-insensitive)
+				if (decodedData.toUpperCase().startsWith("ITEM:")) {
+					const parts = decodedData.substring(5).split("|");
+					console.log("Parts:", parts);
+					
+					if (parts.length >= 5) {
+						const [name, qty, unit, price, reorder] = parts;
+
+						// Fill the modal form
+						document.getElementById('modalItemName').value = name;
+						document.getElementById('modalItemQty').value = qty;
+						document.getElementById('modalItemUnit').value = unit;
+						document.getElementById('modalItemPrice').value = price;
+						document.getElementById('modalItemReorder').value = reorder;
+
+						stopQRScanner();
+						closeQRScanner();
+						openAddItemModal();
+						alert(`Scanned: ${name}\nForm populated! Review and click "Add Item" to save.`);
+					} else {
+						alert(`Invalid QR format: expected 5 parts, got ${parts.length}`);
+					}
+				} else {
+					alert(`Invalid QR code format. Data received: ${decodedData.substring(0, 50)}...`);
+				}
+			} catch (e) {
+				console.error("QR scan error:", e);
+				const errorMsg = e && e.message ? e.message : "Unknown error";
+				alert(`Error reading QR code: ${errorMsg}`);
+			}
+		}
+
+		// Menu Specials JavaScript
+		const defaultMenuSpecials = [
+			{ id: 1, name: "Double Cheeseburger", type: "SPECIAL", description: "2 patties, extra cheese", ingredients: "Beef, Cheese, Buns" },
+			{ id: 2, name: "Fish Taco Plate", type: "COMBO", description: "3 tacos + chips & salsa", ingredients: "Fish, Tortillas, Cabbage" },
+			{ id: 3, name: "Chicken Bowl", type: "DAILY", description: "Rice bowl special", ingredients: "Chicken, Rice, Beans" },
+			{ id: 4, name: "Classic Burger", type: "BESTSELLER", description: "Most popular item", ingredients: "Beef, Lettuce, Tomato, Bun" },
+			{ id: 5, name: "Veggie Wrap", type: "NEW", description: "Fresh garden option", ingredients: "Lettuce, Tomato, Onion, Wrap" }
+		];
+
+		function getMenuSpecials() {
+			const saved = localStorage.getItem('menuSpecials');
+			const hasUserData = localStorage.getItem('menuSpecialsUserData');
+			if (saved && hasUserData) {
+				return JSON.parse(saved);
+			}
+			// First time only - save defaults and mark as user data
+			localStorage.setItem('menuSpecials', JSON.stringify(defaultMenuSpecials));
+			localStorage.setItem('menuSpecialsUserData', 'true');
+			return defaultMenuSpecials;
+		}
+
+		function saveMenuSpecials(specials) {
+			localStorage.setItem('menuSpecials', JSON.stringify(specials));
+			localStorage.setItem('menuSpecialsUserData', 'true');
+		}
+
+		function renderMenuSpecials() {
+			const specials = getMenuSpecials();
+			const container = document.getElementById('menuSpecialsList');
+			container.innerHTML = '';
+
+			specials.forEach(special => {
+				const div = document.createElement('div');
+				div.className = 'sale-item';
+				div.innerHTML = `
+					<span class="sale-badge">${special.type}</span>
+					<h4>${special.name}</h4>
+					<p>${special.description}</p>
+					<div class="sale-price">Uses: ${special.ingredients}</div>
+					<div class="sale-actions">
+						<button class="btn-delete-sale" onclick="deleteMenuSpecial(${special.id})">Delete</button>
+					</div>
+				`;
+				container.appendChild(div);
+			});
+		}
+
+		function openMenuModal() {
+			document.getElementById("menuForm").reset();
+			document.getElementById("menuModalTitle").innerText = "Add Menu Special";
+			document.getElementById("menuSpecialModal").style.display = "flex";
+		}
+
+		function closeMenuModal() {
+			document.getElementById("menuSpecialModal").style.display = "none";
+		}
+
+		function saveMenuSpecial(event) {
+			event.preventDefault();
+			
+			const name = document.getElementById("menuName").value.trim();
+			const type = document.getElementById("menuType").value;
+			const description = document.getElementById("menuDescription").value.trim();
+			const ingredients = document.getElementById("menuIngredients").value.trim();
+
+			if (!name || !type || !description || !ingredients) return;
+
+			const specials = getMenuSpecials();
+			const newSpecial = {
+				id: Date.now(),
+				name,
+				type,
+				description,
+				ingredients
+			};
+
+			specials.push(newSpecial);
+			saveMenuSpecials(specials);
+			renderMenuSpecials();
+			closeMenuModal();
+		}
+
+		function deleteMenuSpecial(id) {
+			if (!confirm('Delete this menu special?')) return;
+			
+			let specials = getMenuSpecials();
+			specials = specials.filter(s => s.id !== id);
+			saveMenuSpecials(specials);
+			renderMenuSpecials();
+		}
+
+		// Initialize menu specials on page load
+		document.addEventListener("DOMContentLoaded", renderMenuSpecials);
+
+		// ============================================
+		// QR CODE GENERATION
+		// ============================================
+
+		function generateQRCode(button) {
+			const name = button.getAttribute('data-name');
+			const qty = button.getAttribute('data-qty');
+			const unit = button.getAttribute('data-unit');
+			const price = button.getAttribute('data-price');
+			const reorder = button.getAttribute('data-reorder');
+
+			// Format: ITEM:name|qty|unit|price|reorder
+			const qrData = `ITEM:${name}|${qty}|${unit}|${price}|${reorder}`;
+			
+			// Generate QR using QRServer API (free and reliable)
+			const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
+			
+			document.getElementById('qrItemName').textContent = name;
+			document.getElementById('qrCodeImage').src = qrUrl;
+			document.getElementById('qrGeneratorModal').style.display = 'flex';
+		}
+
+		function closeQRGeneratorModal() {
+			document.getElementById('qrGeneratorModal').style.display = 'none';
+		}
+
+		function printQRCode() {
+			const qrImage = document.getElementById('qrCodeImage').src;
+			const itemName = document.getElementById('qrItemName').textContent;
+			
+			const printWindow = window.open('', '_blank');
+			printWindow.document.write(`
+				<html>
+				<head>
+					<title>QR Code - ${itemName}</title>
+					<style>
+						body {
+							font-family: Arial, sans-serif;
+							text-align: center;
+							padding: 20px;
+						}
+						.qr-container {
+							border: 2px dashed #667eea;
+							padding: 20px;
+							display: inline-block;
+							border-radius: 10px;
+						}
+						img {
+							max-width: 300px;
+						}
+						h2 {
+							color: #333;
+							margin-bottom: 10px;
+						}
+						p {
+							color: #666;
+							font-size: 14px;
+						}
+						.label {
+							margin-top: 15px;
+							font-size: 12px;
+							color: #999;
+						}
+					</style>
+				</head>
+				<body>
+					<div class="qr-container">
+						<h2>${itemName}</h2>
+						<img src="${qrImage}" alt="QR Code">
+						<p>Scan to add item to inventory</p>
+						<div class="label">Food Truck Inventory System</div>
+					</div>
+					<scr` + `ipt>window.onload = () => { window.print(); window.close(); };</scr` + `ipt>
+				</body>
+				</html>
+			`);
+			printWindow.document.close();
+		}
+
+		// ============================================
+		// Calendar JavaScript
+		let currentDate = new Date();
+		let selectedDate = null;
+		let editingDateKey = null;
+
+		// Load comments from localStorage
+		function getComments() {
+			const saved = localStorage.getItem('calendarComments');
+			return saved ? JSON.parse(saved) : {};
+		}
+
+		function saveComments(comments) {
+			localStorage.setItem('calendarComments', JSON.stringify(comments));
+		}
+
+		function getDateKey(year, month, day) {
+			return `${year}-${month + 1}-${day}`;
+		}
+
+		function hasComment(year, month, day) {
+			const comments = getComments();
+			const key = getDateKey(year, month, day);
+			return !!comments[key];
+		}
+
+		function renderCalendar() {
+			const year = currentDate.getFullYear();
+			const month = currentDate.getMonth();
+			const firstDay = new Date(year, month, 1).getDay();
+			const daysInMonth = new Date(year, month + 1, 0).getDate();
+			const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+			const monthNames = ["January", "February", "March", "April", "May", "June",
+				"July", "August", "September", "October", "November", "December"];
+			document.getElementById("calendarMonth").innerText = monthNames[month] + " " + year;
+
+			const grid = document.getElementById("calendarGrid");
+			// Keep headers, remove days
+			while (grid.children.length > 7) {
+				grid.removeChild(grid.lastChild);
+			}
+
+			const today = new Date();
+
+			// Previous month days
+			for (let i = firstDay - 1; i >= 0; i--) {
+				const dayDiv = document.createElement("div");
+				dayDiv.className = "calendar-day other-month";
+				dayDiv.innerText = daysInPrevMonth - i;
+				grid.appendChild(dayDiv);
+			}
+
+			// Current month days
+			for (let i = 1; i <= daysInMonth; i++) {
+				const dayDiv = document.createElement("div");
+				dayDiv.className = "calendar-day";
+				dayDiv.innerText = i;
+
+				if (year === today.getFullYear() && month === today.getMonth() && i === today.getDate()) {
+					dayDiv.classList.add("today");
+				}
+
+				if (selectedDate && year === selectedDate.getFullYear() &&
+				    month === selectedDate.getMonth() && i === selectedDate.getDate()) {
+					dayDiv.classList.add("selected");
+				}
+
+				if (hasComment(year, month, i)) {
+					dayDiv.classList.add("has-comment");
+				}
+
+				dayDiv.onclick = function() {
+					openCommentModal(year, month, i);
+				};
+
+				grid.appendChild(dayDiv);
+			}
+
+			// Next month days to fill grid
+			const totalCells = grid.children.length - 7;
+			const remainingCells = 35 - totalCells;
+			for (let i = 1; i <= remainingCells; i++) {
+				const dayDiv = document.createElement("div");
+				dayDiv.className = "calendar-day other-month";
+				dayDiv.innerText = i;
+				grid.appendChild(dayDiv);
+			}
+		}
+
+		function previousMonth() {
+			currentDate.setMonth(currentDate.getMonth() - 1);
+			renderCalendar();
+		}
+
+		function nextMonth() {
+			currentDate.setMonth(currentDate.getMonth() + 1);
+			renderCalendar();
+		}
+
+		function openCommentModal(year, month, day) {
+			editingDateKey = getDateKey(year, month, day);
+			const comments = getComments();
+			const existingComment = comments[editingDateKey];
+
+			const dateStr = new Date(year, month, day).toLocaleDateString('en-US', {
+				month: 'long',
+				day: 'numeric',
+				year: 'numeric'
+			});
+
+			document.getElementById("commentDate").innerText = dateStr;
+			document.getElementById("commentInput").value = existingComment || "";
+
+			if (existingComment) {
+				document.getElementById("existingCommentSection").style.display = "block";
+				document.getElementById("existingCommentText").innerText = existingComment;
+				document.getElementById("deleteBtn").style.display = "block";
+			} else {
+				document.getElementById("existingCommentSection").style.display = "none";
+				document.getElementById("deleteBtn").style.display = "none";
+			}
+
+			document.getElementById("calendarCommentModal").style.display = "flex";
+		}
+
+		function closeCommentModal() {
+			document.getElementById("calendarCommentModal").style.display = "none";
+			editingDateKey = null;
+		}
+
+		function saveComment() {
+			if (!editingDateKey) return;
+
+			const commentText = document.getElementById("commentInput").value.trim();
+			const comments = getComments();
+
+			if (commentText) {
+				comments[editingDateKey] = commentText;
+			} else {
+				delete comments[editingDateKey];
+			}
+
+			saveComments(comments);
+			renderCalendar();
+			closeCommentModal();
+		}
+
+		function deleteComment() {
+			if (!editingDateKey) return;
+
+			const comments = getComments();
+			delete comments[editingDateKey];
+			saveComments(comments);
+			renderCalendar();
+			closeCommentModal();
+		}
+
+		// Initialize calendar on page load
+		document.addEventListener("DOMContentLoaded", renderCalendar);
+
+		// Close comment modal on Escape key
+		document.addEventListener("keydown", function(e) {
+			if (e.key === "Escape") {
+				closeCommentModal();
+			}
+		});
+	</script>
+
+</body>
+</html>

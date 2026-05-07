@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<title>Food Truck Inventory</title>
+<style>
+body {
+	font-family: Arial, sans-serif;
+	margin: 40px;
+	background-color: #f9f9f9;
+}
+
+h1 {
+	color: #2c3e50;
+	text-align: center;
+	border-bottom: 3px solid #3498db;
+	padding-bottom: 10px;
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 20px;
+	background-color: white;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+th, td {
+	padding: 12px 15px;
+	text-align: left;
+	border-bottom: 1px solid #ddd;
+}
+
+th {
+	background-color: #f4f6f8;
+	font-weight: bold;
+	color: #3498db;
+}
+
+.low-stock {
+	background-color: #ffe6e6;
+	color: #b00000;
+	font-weight: bold;
+}
+
+button {
+	padding: 10px 15px;
+	cursor: pointer;
+	border: none;
+	background-color: #2ecc71;
+	color: white;
+	border-radius: 4px;
+	font-size: 16px;
+	transition: background 0.3s ease;
+}
+
+button:hover {
+	background-color: #27ae60;
+}
+
+input[type="number"] {
+	width: 80px;
+	padding: 8px;
+	border-radius: 4px;
+	border: 1px solid #bdc3c7;
+	font-size: 15px;
+}
+</style>
+</head>
+<body>
+
+	<h1>Ingredient Inventory</h1>
+
+	<table>
+		<thead>
+			<tr>
+				<th>Name</th>
+				<th>Quantity</th>
+				<th>Unit</th>
+				<th>Reorder Level</th>
+				<th>Status</th>
+				<th>Restock</th>
+			</tr>
+		</thead>
+		<tbody>
+			<!-- Thymeleaf loops over ingredients from Spring -->
+			<tr th:each="ingredient : ${ingredients}">
+				<td th:text="${ingredient.name}"></td>
+				<td th:text="${ingredient.quantity}"></td>
+				<td th:text="${ingredient.unit}"></td>
+				<td th:text="${ingredient.reorderLevel}"></td>
+				<td>
+					<form th:action="@{/inventory/add}" method="post"
+						class="add-ingredient-form">
+						<label for="name">Name:</label> <input type="text" id="name"
+							name="name" placeholder="e.g., Ground Beef" required /> <label
+							for="quantity">Quantity:</label> <input type="number"
+							id="quantity" name="quantity" min="1" placeholder="Qty" required />
+						<label for="unit">Unit:</label> <input type="text" id="unit"
+							name="unit" placeholder="e.g., lbs" required /> <label
+							for="reorderLevel">Reorder Level:</label> <input type="number"
+							id="reorderLevel" name="reorderLevel" min="0"
+							placeholder="e.g., 10" required />
+						<button type="submit">Add Ingredient</button>
+					</form>
+				</td>
+
+				<!-- Status indicator -->
+				<td><span
+					th:if="${ingredient.quantity <= ingredient.reorderLevel}"
+					class="low-stock">⚠ LOW</span> <span
+					th:unless="${ingredient.quantity <= ingredient.reorderLevel}">OK</span>
+				</td>
+
+				<!-- Restock button (form submits POST to /inventory/restock/{id}) -->
+				<td>
+					<form th:action="@{/inventory/restock(id=${ingredient.id})}"
+						method="post" class="restock-form">
+						<input type="hidden" name="id" value="${ingredient.id}" /> <label
+							for="amount">Qty:</label> <input type="number" id="amount"
+							name="amount" min="1" placeholder="Qty"
+							th:value="${ingredient.quantity}">
+						<button type="submit">Add</button>
+					</form>
+				</td>
+
+			</tr>
+		</tbody>
+	</table>
+
+	<!-- Optional: Add a footer note -->
+	<div
+		style="margin-top: 30px; text-align: center; color: #7f8c8d; font-size: 14px;">
+		Built with ❤️ using Spring Boot & Thymeleaf</div>
+
+
+</body>
+<script>
+document.querySelectorAll('.add-ingredient-form').forEach(form => {
+    form.addEventListener('submit', async e => {
+        e.preventDefault();
+
+        const name = form.querySelector('#name').value;
+        const quantity = parseInt(form.querySelector('#quantity').value);
+        const unit = form.querySelector('#unit').value;
+        const reorderLevel = parseInt(form.querySelector('#reorderLevel').value);
+
+        if (!name || !quantity || !unit || !reorderLevel) return alert("All fields are required!");
+
+        try {
+            const response = await fetch('/inventory/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({
+                    name, quantity, unit, reorderLevel
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to add ingredient');
+
+            const result = await response.json();
+
+            alert(result.message); // Show success
+
+            // Re-render the table immediately after adding
+            window.location.reload(); // Or use AJAX update later (optional)
+
+        } catch (err) {
+            console.error("Error:", err);
+            alert(`❌ Failed to add: ${err.message}`);
+        }
+    });
+});
+</script>
+
+</html>

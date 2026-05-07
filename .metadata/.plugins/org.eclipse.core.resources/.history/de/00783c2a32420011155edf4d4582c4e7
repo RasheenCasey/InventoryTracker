@@ -1,0 +1,53 @@
+package com.Inventory.productsheet.controller;
+
+import com.Inventory.productsheet.model.Ingredient;
+import com.Inventory.productsheet.repository.IngredientRepository;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+@Controller
+public class InventoryViewController {
+
+    private final IngredientRepository ingredientRepository;
+
+    public InventoryViewController(IngredientRepository ingredientRepository) {
+        this.ingredientRepository = ingredientRepository;
+    }
+
+    @GetMapping("/inventory")
+    public String viewInventory(Model model) {
+        model.addAttribute("ingredients", ingredientRepository.findByActiveTrue());
+        return "inventory";
+    }
+
+    // ✅ NEW ENDPOINT: Accepts GET requests to /inventory/restock/{id}
+    @GetMapping("/inventory/restock/{id}")
+    public String showRestockForm(@PathVariable Integer id, Model model) {
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ingredient not found with ID: " + id));
+
+        // Add the ingredient to context so it can be used in view
+        model.addAttribute("ingredient", ingredient);
+
+        return "inventory";  // Re-render same page, but now we have form data available!
+    }
+
+    // ✅ OPTIONAL: Handle POST RESTOCK Logic (if you want to update quantity)
+    @PostMapping("/inventory/restock/{id}")
+    public String restock(@PathVariable Integer id,
+                          @RequestParam("amount") int amount,
+                          Model model) {
+
+        Ingredient ingredient = ingredientRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Ingredient not found: " + id));
+
+        // Update quantity (example logic — adjust to your DB logic!)
+        ingredient.setQuantity(ingredient.getQuantity() + amount);
+
+        ingredientRepository.save(ingredient);  // Save back
+
+        model.addAttribute("successMessage", "Restocked successfully!");
+        return "inventory"; // Return same page
+    }
+}

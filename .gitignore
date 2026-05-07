@@ -1,0 +1,49 @@
+# Build output
+target/
+build/
+*.class
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+*~
+
+# Eclipse
+.metadata/
+.settings/
+.project
+.classpath
+.factorypath
+.recommenders/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment files (sensitive)
+.env
+.env.local
+.env.*.local
+
+# Maven
+.mvn/
+mvnw
+mvnw.cmd
+
+# Gradle (if ever added)
+.gradle/
+gradle/
+gradlew
+gradlew.bat
+
+# H2 database files (if using file-based)
+*.db
+*.mv.db
+*.trace.db
