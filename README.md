@@ -51,7 +51,7 @@ http://localhost:8080
 
 Login credentials:
 - Username: `admin`
-- Password: `admin`
+- Password: `admin123`
 
 ### H2 Console
 
