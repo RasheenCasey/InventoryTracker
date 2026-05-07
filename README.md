@@ -1,6 +1,9 @@
 # Food Truck Inventory Tracker
+https://inventory-tracker-mbp5.onrender.com/
 
 A Spring Boot web application for managing food truck inventory, tracking stock levels, and placing orders with distributors.
+
+https://github.com/RasheenCasey/InventoryTracker
 
 ## Features
 
