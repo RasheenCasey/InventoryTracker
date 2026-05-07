@@ -30,18 +30,21 @@ A Spring Boot web application for managing food truck inventory, tracking stock 
 ### Running Locally
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
-cd productsheet
+cd inventory-tracker
 ```
 
 2. Build and run:
+
 ```bash
 mvn clean install
 mvn spring-boot:run
 ```
 
 3. Open in browser:
+
 ```
 http://localhost:8080
 ```
@@ -53,6 +56,7 @@ Login credentials:
 ### H2 Console
 
 Access the H2 database console at:
+
 ```
 http://localhost:8080/h2-console
 ```
@@ -62,6 +66,7 @@ Username: `sa`
 Password: (leave blank)
 
 ## Docker
+
 
 ### Build and run with Docker:
 
@@ -130,6 +135,7 @@ src/
 ## Testing
 
 Run tests with Maven:
+
 ```bash
 mvn test
 ```
